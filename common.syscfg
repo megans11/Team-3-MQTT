@@ -1,0 +1,176 @@
+/*
+ * Copyright (c) 2018-2019, Texas Instruments Incorporated
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * *  Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * *  Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * *  Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+/*
+ *  common.syscfg
+ */
+// @cliArgs --board /ti/boards/CC3220SF_LAUNCHXL
+
+// Add a SENSORS BoosterPack boosterpack
+var BOOSTXL_SENSORS = scripting.addHardware("/ti/boards/boosterpacks/BOOSTXL-SENSORS");
+var SimpleLinkWifi = scripting.addModule("/ti/drivers/net/wifi/SimpleLinkWifi");
+var Crypto = scripting.addModule("/ti/drivers/Crypto");
+var Display = scripting.addModule("/ti/display/Display");
+var DMA = scripting.addModule("/ti/drivers/DMA");
+var GPIO = scripting.addModule("/ti/drivers/GPIO");
+var SPI = scripting.addModule("/ti/drivers/SPI");
+var Timer = scripting.addModule("/ti/drivers/Timer");
+var Watchdog = scripting.addModule("/ti/drivers/Watchdog");
+var Crypto1 = Crypto.addInstance();
+var Display1 = Display.addInstance();
+var GPIO1 = GPIO.addInstance();
+var GPIO2 = GPIO.addInstance();
+var GPIO3 = GPIO.addInstance();
+var GPIO4 = GPIO.addInstance();
+var GPIO5 = GPIO.addInstance();
+var GPIO6 = GPIO.addInstance();
+var GPIO7 = GPIO.addInstance();
+var GPIO8 = GPIO.addInstance();
+var SPI1 = SPI.addInstance();
+var Timer1 = Timer.addInstance();
+var Timer2 = Timer.addInstance();
+var Timer3 = Timer.addInstance();
+var Watchdog1 = Watchdog.addInstance();
+var Power = scripting.addModule("/ti/drivers/Power");
+// IO retention Shutdown - IO retention mask for Shutdown
+Power.ioRetentionShutdown = ["GRP_1"];
+// Name
+Crypto1.$name = "Board_Crypto0";
+// Name
+Display1.$name = "Board_Display0";
+// Use Hardware
+Display1.$hardware = system.deviceData.board.components.xds110Uart;
+// Name
+Display1.uart.$name = "Board_UART0";
+// Use DMA
+Display1.uart.useDMA = true;
+// Use Peripheral
+Display1.uart.uart.$assign = "UART0";
+// Assign pin
+Display1.uart.uart.txPin.$assign = "55"; // pin name - GP01
+// Assign pin
+Display1.uart.uart.rxPin.$assign = "57"; // pin name - GP02
+// Assign pin
+Display1.uart.uart.txDmaChannel.$assign = "UDMA_CH9";
+// Assign pin
+Display1.uart.uart.rxDmaChannel.$assign = "UDMA_CH8";
+// Use Hardware
+GPIO1.$hardware = system.deviceData.board.components.SW2;
+// Name
+GPIO1.$name = "Board_GPIO_BUTTON0";
+// Interrupt Trigger
+GPIO1.interruptTrigger = "Rising Edge";
+// Assign pin
+GPIO1.gpioPin.$assign = "boosterpack.3"; // P04
+// Name
+GPIO2.$name = "Board_GPIO_BUTTON1";
+// Use Hardware
+GPIO2.$hardware = system.deviceData.board.components.SW3;
+// Interrupt Trigger
+GPIO2.interruptTrigger = "Rising Edge";
+// Assign pin
+GPIO2.gpioPin.$assign = "boosterpack.11"; // P15
+// Name
+GPIO3.$name = "Board_GPIO_LED0";
+// Use Hardware
+GPIO3.$hardware = system.deviceData.board.components.LED0;
+// Output Strength
+GPIO3.outputStrength = "High";
+// Name
+GPIO4.$name = "Board_GPIO_LED1";
+// Use Hardware
+GPIO4.$hardware = system.deviceData.board.components.LED2;
+// Output Strength
+GPIO4.outputStrength = "High";
+// Name
+GPIO5.$name = "Board_GPIO_LED2";
+// Use Hardware
+GPIO5.$hardware = system.deviceData.board.components.LED1;
+// Output Strength
+GPIO5.outputStrength = "High";
+// Name
+GPIO6.$name = "Board_GPIO0";
+// Mode - Select the GPIO mode. `Dynamic` mode indicates the application will dynamically configure the GPIO at runtime using the GPIO APIs
+GPIO6.mode = "Dynamic";
+// Assign pin
+GPIO6.gpioPin.$assign = "boosterpack.19"; // P18
+// Name
+GPIO7.$name = "Board_GPIO1";
+// Mode - Select the GPIO mode. `Dynamic` mode indicates the application will dynamically configure the GPIO at runtime using the GPIO APIs
+GPIO7.mode = "Dynamic";
+// Assign pin
+GPIO7.gpioPin.$assign = "boosterpack.2"; // P58*
+// Name
+GPIO8.$name = "Board_GPIO2";
+// Mode - Select the GPIO mode. `Dynamic` mode indicates the application will dynamically configure the GPIO at runtime using the GPIO APIs
+GPIO8.mode = "Dynamic";
+// Assign pin
+GPIO8.gpioPin.$assign = "boosterpack.4"; // P03
+// Name
+SPI1.$name = "Board_SPI0";
+// Mode
+SPI1.mode = "Four Pin SS Active Low";
+// Default TX Buffer Value - Specifies the default transmit buffer value. This value must be provided in hexadecimal format. 0 and ~0 are also acceptable inputs.
+SPI1.defaultTxBufferValue = "0";
+// Use Peripheral
+SPI1.spi.$assign = "SPI0";
+// Assign pin
+SPI1.spi.sclkPin.$assign = "boosterpack.7"; // P05
+// Assign pin
+SPI1.spi.misoPin.$assign = "boosterpack.14"; // P06
+// Assign pin
+SPI1.spi.mosiPin.$assign = "boosterpack.15"; // P07
+// Assign pin
+SPI1.spi.ssPin.$assign = "boosterpack.18"; // P08
+// Assign pin
+SPI1.spi.dmaRxChannel.$assign = "UDMA_CH6";
+// Assign pin
+SPI1.spi.dmaTxChannel.$assign = "UDMA_CH7";
+// Name
+Timer1.$name = "Board_TIMER0";
+// Timer Type
+Timer1.timerType = "32 Bits";
+// Use Peripheral
+Timer1.timer.$assign = "Timer0";
+// Name
+Timer2.$name = "Board_TIMER1";
+// Use Peripheral
+Timer2.timer.$assign = "Timer1";
+// Name
+Timer3.$name = "Board_TIMER2";
+// Use Peripheral
+Timer3.timer.$assign = "Timer1";
+// Name
+Watchdog1.$name = "Board_WATCHDOG0";
+// Use Peripheral
+Watchdog1.watchdog.$assign = "WATCHDOG0";
+
