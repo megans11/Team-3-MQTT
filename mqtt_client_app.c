@@ -105,8 +105,8 @@
 
 /* Defining Broker IP address and port Number                                */
 //#define SERVER_ADDRESS           "messagesight.demos.ibm.com"
-#define SERVER_ADDRESS           "m2m.eclipse.org"
-#define SERVER_IP_ADDRESS        "192.168.178.67"
+//#define SERVER_ADDRESS           "m2m.eclipse.org"
+#define SERVER_IP_ADDRESS        "192.168.1.14"
 #define PORT_NUMBER              1883
 #define SECURED_PORT_NUMBER      8883
 #define LOOPBACK_PORT            1882
@@ -283,7 +283,7 @@ void setTime()
 MQTTClient_ConnParams Mqtt_ClientCtx =
 {
     MQTTCLIENT_NETCONN_URL,
-    SERVER_ADDRESS,
+    SERVER_IP_ADDRESS,
     PORT_NUMBER, 0, 0, 0,
     NULL
 };

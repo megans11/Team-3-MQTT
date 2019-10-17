@@ -59,9 +59,9 @@ extern "C"
 /* is executed.                                                               */
 
 /* AP SSID                                                                    */
-#define SSID_NAME               "SPN24"
+#define SSID_NAME               ""
 /* Security type (OPEN or WEP or WPA)                                         */
-#define SECURITY_TYPE           SL_WLAN_SEC_TYPE_OPEN
+#define SECURITY_TYPE           SL_WLAN_SEC_TYPE_WPA
 /* Password of the secured AP                                                 */
 #define SECURITY_KEY            ""
 
