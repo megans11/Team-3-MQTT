@@ -716,15 +716,9 @@ void Mqtt_start()
     mq_attr attr;
     unsigned mode = 0;
 
-    /*sync object for inter thread communication                             */
-    attr.mq_maxmsg = 10;
-    attr.mq_msgsize = sizeof(struct msgQueue);
-    g_PBQueue = mq_open("g_PBQueue", O_CREAT, mode, &attr);
-
-    if(g_PBQueue == NULL)
-    {
-        UART_PRINT("MQTT Message Queue create fail\n\r");
+    if (create_MqttQueue() == CREATE_QUEUE_FAILURE) {
         gInitState &= ~MQTT_INIT_STATE;
+//        UART_PRINT("MQTT thread create fail\n\r");
         return;
     }
 
@@ -738,7 +732,7 @@ void Mqtt_start()
     if(retc != 0)
     {
         gInitState &= ~MQTT_INIT_STATE;
-        UART_PRINT("MQTT thread create fail\n\r");
+//        UART_PRINT("MQTT thread create fail\n\r");
         return;
     }
 
@@ -746,16 +740,16 @@ void Mqtt_start()
     if(retc != 0)
     {
         gInitState &= ~MQTT_INIT_STATE;
-        UART_PRINT("MQTT thread create fail\n\r");
+//        UART_PRINT("MQTT thread create fail\n\r");
         return;
     }
 
-    /*enable interrupt for the GPIO 13 (SW3) and GPIO 22 (SW2).              */
-    GPIO_setCallback(Board_GPIO_BUTTON0, pushButtonInterruptHandler2);
-    GPIO_enableInt(Board_GPIO_BUTTON0); // SW2
-
-    GPIO_setCallback(Board_GPIO_BUTTON1, pushButtonInterruptHandler3);
-    GPIO_enableInt(Board_GPIO_BUTTON1); // SW3
+//    /*enable interrupt for the GPIO 13 (SW3) and GPIO 22 (SW2).              */
+//    GPIO_setCallback(Board_GPIO_BUTTON0, pushButtonInterruptHandler2);
+//    GPIO_enableInt(Board_GPIO_BUTTON0); // SW2
+//
+//    GPIO_setCallback(Board_GPIO_BUTTON1, pushButtonInterruptHandler3);
+//    GPIO_enableInt(Board_GPIO_BUTTON1); // SW3
 
     gInitState &= ~MQTT_INIT_STATE;
 }
