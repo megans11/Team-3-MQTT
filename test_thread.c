@@ -14,7 +14,7 @@ void *testThread(void *arg0)
     char type[10];
     char action[32];
 
-    // Initiate for tests
+    // Initiate for tests (mqttQueue)
     if (create_MqttQueue() != CREATE_QUEUE_SUCCESS) {
         while (1) {} // failed
     }

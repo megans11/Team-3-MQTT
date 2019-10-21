@@ -1326,6 +1326,7 @@ int16_t MQTT_subscribe()
 //        UART_PRINT("\n\r Subscription Error \n\r");
         MQTTClient_disconnect(gMqttClient);
         gUiConnFlag = 0;
+        return 0;
     }
     else
     {
@@ -1334,6 +1335,7 @@ int16_t MQTT_subscribe()
 //            UART_PRINT("Client subscribed on %s\n\r,", topic[iCount]);
             //print to console
         }
+        return -1;
     }
 }
 
