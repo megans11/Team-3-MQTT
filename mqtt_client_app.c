@@ -178,6 +178,11 @@ int32_t MqttServer_start();
 int32_t MqttClient_start();
 int32_t MQTT_SendMsgToQueue(struct msgQueue *queueElement);
 
+
+int32_t MQTT_connect();
+int16_t MQTT_subscribe();
+int16_t MQTT_publish(char * pubTopic, char * pubData);
+
 //*****************************************************************************
 //                 GLOBAL VARIABLES
 //*****************************************************************************
@@ -1251,6 +1256,105 @@ void mainThread(void * args)
         UART_PRINT("reopen MQTT # %d  \r\n", ++count);
     }
 }
+
+/**
+ * New version of the MQTT connecting method.
+ */
+int32_t MQTT_connect()
+{
+    int32_t lRetVal;
+    char SSID_Remote_Name[32];
+    int8_t Str_Length;
+
+    memset(SSID_Remote_Name, '\0', sizeof(SSID_Remote_Name));
+    Str_Length = strlen(SSID_NAME);
+
+    if(Str_Length)
+    {
+        /*Copy the Default SSID to the local variable                        */
+        strncpy(SSID_Remote_Name, SSID_NAME, Str_Length);
+    }
+
+    /*Reset The state of the machine                                         */
+    Network_IF_ResetMCUStateMachine();
+
+    /*Start the driver                                                       */
+    lRetVal = Network_IF_InitDriver(ROLE_STA);
+    if(lRetVal < 0)
+    {
+//        UART_PRINT("Failed to start SimpleLink Device\n\r", lRetVal);
+        return(-1);
+    }
+
+    /*Initialize AP security params                                          */
+    SecurityParams.Key = (signed char *) SECURITY_KEY;
+    SecurityParams.KeyLen = strlen(SECURITY_KEY);
+    SecurityParams.Type = SECURITY_TYPE;
+
+    /*Connect to the Access Point                                            */
+    lRetVal = Network_IF_ConnectAP(SSID_Remote_Name, SecurityParams);
+    if(lRetVal < 0)
+    {
+//        UART_PRINT("Connection to an AP failed\n\r");
+        return(-1);
+    }
+
+//        sleep(1);
+
+    return(0);
+}
+
+/**
+ * New version of subscribing
+ */
+int16_t MQTT_subscribe()
+{
+    /*Subscribe to topics when session is not stored by the server       */
+    uint8_t subIndex;
+    MQTTClient_SubscribeParams subscriptionInfo[
+        SUBSCRIPTION_TOPIC_COUNT];
+    uint32_t iCount;
+
+    for(subIndex = 0; subIndex < SUBSCRIPTION_TOPIC_COUNT; subIndex++)
+    {
+        subscriptionInfo[subIndex].topic = topic[subIndex];
+        subscriptionInfo[subIndex].qos = qos[subIndex];
+    }
+
+    if(MQTTClient_subscribe(gMqttClient, subscriptionInfo,
+                            SUBSCRIPTION_TOPIC_COUNT) < 0)
+    {
+//        UART_PRINT("\n\r Subscription Error \n\r");
+        MQTTClient_disconnect(gMqttClient);
+        gUiConnFlag = 0;
+    }
+    else
+    {
+        for(iCount = 0; iCount < SUBSCRIPTION_TOPIC_COUNT; iCount++)
+        {
+//            UART_PRINT("Client subscribed on %s\n\r,", topic[iCount]);
+            //print to console
+        }
+    }
+}
+
+/**
+ * New version of publishing
+ */
+int16_t MQTT_publish(char * pubTopic, char * pubData)
+{
+    //publish topic is either PUBLISH_TOPIC0 or PUBLISH_TOPIC1
+    //*publish_topic
+    //*publish_data
+
+    //int16_t MQTTClient_publish(MQTTClient_Handle handle, char *topic, uint16_t topicLen, char *msg, uint16_t msgLen, uint32_t flags);
+
+    int16_t lRetVal = MQTTClient_publish(gMqttClient, (char*) pubTopic, strlen((char*)pubTopic),
+                                      (char*)pubData, strlen((char*) pubData),
+                                      MQTT_QOS_2 |((RETAIN_ENABLE) ? MQTT_PUBLISH_RETAIN : 0));
+    return lRetVal;
+}
+
 
 //*****************************************************************************
 //
