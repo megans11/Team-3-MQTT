@@ -36,6 +36,24 @@ int sendDebugMsg_MqttQueue(char* topic, char* type, char* action){
     strncpy(msg.topic, topic, strlen(topic));
     strncpy(msg.type, type, strlen(type));
     strncpy(msg.action, action, strlen(action));
+    msg.msg_type = PUBLISH_MESSAGE;
+
+    BaseType_t ret_val = xQueueSendFromISR(mqttQueue, (const void*) &msg, pdFALSE);
+
+    // Debug after sending within ISR/callback
+
+    if (ret_val == errQUEUE_FULL)
+        return QUEUE_FULL;
+    else
+        return SENT_SUCCESS;
+
+}
+
+int sendCmdMsg_MqttQueue(int type){
+
+    // Debug before sending within ISR/callback
+    mqtt_msg_struct msg;
+    msg.msg_type = type;
 
     BaseType_t ret_val = xQueueSendFromISR(mqttQueue, (const void*) &msg, pdFALSE);
 
@@ -51,20 +69,18 @@ int sendDebugMsg_MqttQueue(char* topic, char* type, char* action){
 /**
  * Blocking read from Queue 1. Fills correct buffer, return type specifies type received.
  */
-int readMsg_MqttQueue(char topic[10], char type[10], char action[32]){
-    mqtt_msg_struct msg_buffer;
-
+int readMsg_MqttQueue(mqtt_msg_struct *msg_buffer){
     // Debug before receiving from queue in ISR
 //    dbgOutputLoc(0);
-    int read_status = xQueueReceive(mqttQueue, (void*) &msg_buffer, portMAX_DELAY);
+    int read_status = xQueueReceive(mqttQueue, (void*) msg_buffer, portMAX_DELAY);
 //    dbgOutputLoc(0);
 
     // Block until message, check if valid
     if (read_status == pdTRUE) {
         // For now:
-        strncpy(topic, msg_buffer.topic, strlen(msg_buffer.topic));
-        strncpy(type, msg_buffer.type, strlen(msg_buffer.type));
-        strncpy(action, msg_buffer.action, strlen(msg_buffer.action));
+//        strncpy(topic, msg_buffer.topic, strlen(msg_buffer.topic));
+//        strncpy(type, msg_buffer.type, strlen(msg_buffer.type));
+//        strncpy(action, msg_buffer.action, strlen(msg_buffer.action));
 
         // Fill correct buffer
 //        switch (msg_buffer[0]){

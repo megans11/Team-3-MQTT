@@ -10,7 +10,6 @@ var Crypto = scripting.addModule("/ti/drivers/Crypto");
 var Display = scripting.addModule("/ti/display/Display");
 var DMA = scripting.addModule("/ti/drivers/DMA");
 var GPIO = scripting.addModule("/ti/drivers/GPIO");
-var SPI = scripting.addModule("/ti/drivers/SPI");
 var Timer = scripting.addModule("/ti/drivers/Timer");
 var Watchdog = scripting.addModule("/ti/drivers/Watchdog");
 var Crypto1 = Crypto.addInstance();
@@ -23,7 +22,6 @@ var GPIO5 = GPIO.addInstance();
 var GPIO6 = GPIO.addInstance();
 var GPIO7 = GPIO.addInstance();
 var GPIO8 = GPIO.addInstance();
-var SPI1 = SPI.addInstance();
 var Timer1 = Timer.addInstance();
 var Timer2 = Timer.addInstance();
 var Timer3 = Timer.addInstance();
@@ -115,28 +113,6 @@ GPIO8.$name = "Board_GPIO2";
 GPIO8.mode = "Dynamic";
 // Assign pin
 GPIO8.gpioPin.$assign = "boosterpack.4"; // P03
-// Name - The C/C++ identifier used in applications as the index parameter passed to SPI runtime APIs
-SPI1.$name = "Board_SPI0";
-// Mode - In three pin mode the SS signal is not used.
-SPI1.mode = "Four Pin SS Active Low";
-// Default TX Buffer Value - Specifies the default transmit buffer value.
-SPI1.defaultTxBufferValue = "0";
-// Name
-SPI1.spi.$name = "MySPI1";
-// Use Peripheral
-SPI1.spi.$assign = "SPI0";
-// Assign pin
-SPI1.spi.sclkPin.$assign = "boosterpack.7"; // P05
-// Assign pin
-SPI1.spi.misoPin.$assign = "boosterpack.14"; // P06
-// Assign pin
-SPI1.spi.mosiPin.$assign = "boosterpack.15"; // P07
-// Assign pin
-SPI1.spi.ssPin.$assign = "boosterpack.18"; // P08
-// Assign pin
-SPI1.spi.dmaRxChannel.$assign = "UDMA_CH6";
-// Assign pin
-SPI1.spi.dmaTxChannel.$assign = "UDMA_CH7";
 // Name - The C/C++ identifier used in applications as the index parameter passed to Timer runtime APIs
 Timer1.$name = "Board_TIMER0";
 // Timer Type
@@ -188,14 +164,14 @@ GPIO4.gpioPin.$suggestSolution = "1";
 // Suggest solution
 GPIO5.gpioPin.$suggestSolution = "2";
 // Suggest solution
-GPIO9.gpioPin.$suggestSolution = "45";
+GPIO9.gpioPin.$suggestSolution = "5";
 // Suggest solution
-GPIO10.gpioPin.$suggestSolution = "50";
+GPIO10.gpioPin.$suggestSolution = "6";
 // Suggest solution
-GPIO11.gpioPin.$suggestSolution = "53";
+GPIO11.gpioPin.$suggestSolution = "7";
 // Suggest solution
-GPIO12.gpioPin.$suggestSolution = "59";
+GPIO12.gpioPin.$suggestSolution = "8";
 // Suggest solution
-GPIO13.gpioPin.$suggestSolution = "60";
+GPIO13.gpioPin.$suggestSolution = "45";
 // Suggest solution
-GPIO14.gpioPin.$suggestSolution = "63";
+GPIO14.gpioPin.$suggestSolution = "50";
