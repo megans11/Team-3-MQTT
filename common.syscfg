@@ -33,6 +33,8 @@ var GPIO12 = GPIO.addInstance();
 var GPIO13 = GPIO.addInstance();
 var GPIO14 = GPIO.addInstance();
 var Timer4 = Timer.addInstance();
+var SPI = scripting.addModule("/ti/drivers/SPI");
+var SPI1 = SPI.addInstance();
 var Board = scripting.addModule("/ti/drivers/Board");
 var Power = scripting.addModule("/ti/drivers/Power");
 // IO Retention Shutdown - IO groups to be retained during Shutdown
@@ -157,6 +159,12 @@ Timer4.$name = "TEST_TIMER";
 Timer4.timer.$name = "MyTimer1";
 // Use Peripheral
 Timer4.timer.$assign = "Timer3";
+// Name - The C/C++ identifier used in applications as the index parameter passed to SPI runtime APIs
+SPI1.$name = "Board_SPI0";
+// Mode - In three pin mode the SS signal is not used.
+SPI1.mode = "Four Pin SS Active Low";
+// Name
+SPI1.spi.$name = "MySPI1";
 // Suggest solution
 GPIO3.gpioPin.$suggestSolution = "64";
 // Suggest solution
@@ -164,14 +172,28 @@ GPIO4.gpioPin.$suggestSolution = "1";
 // Suggest solution
 GPIO5.gpioPin.$suggestSolution = "2";
 // Suggest solution
-GPIO9.gpioPin.$suggestSolution = "5";
+GPIO9.gpioPin.$suggestSolution = "8";
 // Suggest solution
-GPIO10.gpioPin.$suggestSolution = "6";
+GPIO10.gpioPin.$suggestSolution = "45";
 // Suggest solution
-GPIO11.gpioPin.$suggestSolution = "7";
+GPIO11.gpioPin.$suggestSolution = "53";
 // Suggest solution
-GPIO12.gpioPin.$suggestSolution = "8";
+GPIO12.gpioPin.$suggestSolution = "59";
 // Suggest solution
-GPIO13.gpioPin.$suggestSolution = "45";
+GPIO13.gpioPin.$suggestSolution = "60";
 // Suggest solution
-GPIO14.gpioPin.$suggestSolution = "50";
+GPIO14.gpioPin.$suggestSolution = "63";
+// Suggest solution
+SPI1.spi.$suggestSolution = "SPI0";
+// Suggest solution
+SPI1.spi.sclkPin.$suggestSolution = "5";
+// Suggest solution
+SPI1.spi.misoPin.$suggestSolution = "6";
+// Suggest solution
+SPI1.spi.mosiPin.$suggestSolution = "7";
+// Suggest solution
+SPI1.spi.ssPin.$suggestSolution = "50";
+// Suggest solution
+SPI1.spi.dmaRxChannel.$suggestSolution = "UDMA_CH30";
+// Suggest solution
+SPI1.spi.dmaTxChannel.$suggestSolution = "UDMA_CH31";

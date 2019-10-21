@@ -165,11 +165,6 @@
 //*****************************************************************************
 //                      LOCAL FUNCTION PROTOTYPES
 //*****************************************************************************
-void pushButtonInterruptHandler2(uint_least8_t index);
-void pushButtonInterruptHandler3(uint_least8_t index);
-void TimerPeriodicIntHandler(sigval val);
-void LedTimerConfigNStart();
-void LedTimerDeinitStop();
 static void DisplayBanner(char * AppName);
 void * MqttClient(void *pvParameters);
 void Mqtt_ClientStop(uint8_t disconnect);
@@ -179,7 +174,7 @@ void Mqtt_start();
 int32_t Mqtt_IF_Connect();
 int32_t MqttServer_start();
 int32_t MqttClient_start();
-int32_t MQTT_SendMsgToQueue(struct msgQueue *queueElement);
+int32_t MQTT_SendMsgToQueue(struct msgQueue *queueElement) {};
 
 
 int32_t MQTT_connect();
@@ -332,10 +327,7 @@ void * MqttClientThread(void * pvParameters)
     /*write message indicating disconnect Broker message.                   */
     if(sendCmdMsg_MqttQueue(CLIENT_DISCONNECTION) == QUEUE_FULL)
     {
-        UART_PRINT(
-            "\n\n\rQueue is full, throw first msg and send the new one\n\n\r");
-        mq_receive(g_PBQueue, (char*) &queueElemRecv, sizeof(struct msgQueue),
-                   NULL);
+        readMsg_MqttQueue(&queueElemRecv);
         sendCmdMsg_MqttQueue(CLIENT_DISCONNECTION);
     }
 
@@ -572,25 +564,21 @@ void Mqtt_start()
 
 void Mqtt_Stop()
 {
-    struct msgQueue queueElement;
-    struct msgQueue queueElemRecv;
+    mqtt_msg_struct queueElemRecv;
 
     if(gApConnectionState >= 0)
     {
         Mqtt_ClientStop(1);
     }
 
-    queueElement.event = THREAD_TERMINATE_REQ;
-    queueElement.msgPtr = NULL;
-
     /*write message indicating publish message                               */
-    if(MQTT_SendMsgToQueue(&queueElement))
+    if(sendCmdMsg_MqttQueue(THREAD_TERMINATE_REQUEST))
     {
         UART_PRINT(
             "\n\n\rQueue is full, throw first msg and send the new one\n\n\r");
-        mq_receive(g_PBQueue, (char*) &queueElemRecv, sizeof(struct msgQueue),
-                   NULL);
-        MQTT_SendMsgToQueue(&queueElement);
+        readMsg_MqttQueue(&queueElemRecv);
+
+        sendCmdMsg_MqttQueue(THREAD_TERMINATE_REQUEST);
     }
 
     sleep(2);
@@ -939,6 +927,7 @@ void mainThread(void * args)
     SlNetSock_init(0);
     SlNetUtil_init(0);
 
+    SPI_init();
     GPIO_init();
 
     /*Configure the UART                                                     */
