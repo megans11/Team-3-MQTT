@@ -118,18 +118,18 @@
 #define RETAIN_ENABLE            1
 
 /* Defining Number of subscription topics                                    */
-#define SUBSCRIPTION_TOPIC_COUNT 4
+#define SUBSCRIPTION_TOPIC_COUNT 2
 
 /* Defining Subscription Topic Values                                        */
-#define SUBSCRIPTION_TOPIC0      "/Broker/To/cc32xx"
-#define SUBSCRIPTION_TOPIC1      "/cc3200/ToggleLEDCmdL1"
-#define SUBSCRIPTION_TOPIC2      "/cc3200/ToggleLEDCmdL2"
-#define SUBSCRIPTION_TOPIC3      "/cc3200/ToggleLEDCmdL3"
+#define SUBSCRIPTION_TOPIC0      "/cc3200/Debug"
+#define SUBSCRIPTION_TOPIC1      "/cc3200/Statistics"
+
 
 /* Defining Publish Topic Values                                             */
-#define PUBLISH_TOPIC0           "/cc32xx/ButtonPressEvtSw2"
-#define PUBLISH_TOPIC0_DATA \
-    "Push Button SW2 has been pressed on CC32xx device"
+#define PUBLISH_TOPIC0           "/cc32xx/Debug"
+#define PUBLISH_TOPIC0_DATA      "Debug Data"
+#define PUBLISH_TOPIC1           "/cc32xx/Statistics"
+#define PUBLISH_TOPIC1_DATA      "Statistics Data"
 
 /* Spawn task priority and Task and Thread Stack Size                        */
 #define TASKSTACKSIZE            2048
@@ -214,15 +214,14 @@ const char *ClientPassword = "pwd1";
 
 /* Subscription topics and qos values                                        */
 char *topic[SUBSCRIPTION_TOPIC_COUNT] =
-{ SUBSCRIPTION_TOPIC0, SUBSCRIPTION_TOPIC1, \
-    SUBSCRIPTION_TOPIC2, SUBSCRIPTION_TOPIC3 };
+{ SUBSCRIPTION_TOPIC0, SUBSCRIPTION_TOPIC1};
 
 unsigned char qos[SUBSCRIPTION_TOPIC_COUNT] =
-{ MQTT_QOS_2, MQTT_QOS_2, MQTT_QOS_2, MQTT_QOS_2 };
+{ MQTT_QOS_2, MQTT_QOS_2};
 
 /* Publishing topics and messages                                            */
-const char *publish_topic = { PUBLISH_TOPIC0 };
-const char *publish_data = { PUBLISH_TOPIC0_DATA };
+const char *publish_topic = { PUBLISH_TOPIC0, PUBLISH_TOPIC1};
+const char *publish_data = { PUBLISH_TOPIC0_DATA, PUBLISH_TOPIC1_DATA};
 
 /* Message Queue                                                             */
 mqd_t g_PBQueue;
@@ -585,16 +584,16 @@ void * MqttClient(void *pvParameters)
             {
                 GPIO_toggle(Board_GPIO_LED0);
             }
-            else if(strncmp(tmpBuff, SUBSCRIPTION_TOPIC2,
-                            queueElemRecv.topLen) == 0)
-            {
-                GPIO_toggle(Board_GPIO_LED1);
-            }
-            else if(strncmp(tmpBuff, SUBSCRIPTION_TOPIC3,
-                            queueElemRecv.topLen) == 0)
-            {
-                GPIO_toggle(Board_GPIO_LED2);
-            }
+//            else if(strncmp(tmpBuff, SUBSCRIPTION_TOPIC2,
+//                            queueElemRecv.topLen) == 0)
+//            {
+//                GPIO_toggle(Board_GPIO_LED1);
+//            }
+//            else if(strncmp(tmpBuff, SUBSCRIPTION_TOPIC3,
+//                            queueElemRecv.topLen) == 0)
+//            {
+//                GPIO_toggle(Board_GPIO_LED2);
+//            }
 
             free(queueElemRecv.msgPtr);
             break;
@@ -1224,8 +1223,8 @@ void mainThread(void * args)
         gResetApplication = false;
         topic[0] = SUBSCRIPTION_TOPIC0;
         topic[1] = SUBSCRIPTION_TOPIC1;
-        topic[2] = SUBSCRIPTION_TOPIC2;
-        topic[3] = SUBSCRIPTION_TOPIC3;
+//        topic[2] = SUBSCRIPTION_TOPIC2;
+//        topic[3] = SUBSCRIPTION_TOPIC3;
         gInitState = 0;
 
         /*Connect to AP                                                      */
