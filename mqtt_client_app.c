@@ -395,7 +395,7 @@ void * MqttClient(void *pvParameters)
 
         switch(msg_buffer.msg_type)
         {
-        case PUBLISH_PUSH_BUTTON_PRESSED:
+        case PUBLISH_MESSAGE:
 
             /*send publish message                                       */
             lRetVal =
@@ -414,28 +414,6 @@ void * MqttClient(void *pvParameters)
             GPIO_enableInt(Board_GPIO_BUTTON0);     // SW2
 
             break;
-
-        /*msg received by client from remote broker (on a topic      */
-        /*subscribed by local client)                                */
-        case MSG_RECV_BY_CLIENT:
-            tmpBuff = (char *) ((char *) queueElemRecv.msgPtr + 12);
-            if(strncmp
-                (tmpBuff, SUBSCRIPTION_TOPIC1, queueElemRecv.topLen) == 0)
-            {
-                GPIO_toggle(Board_GPIO_LED0);
-            }
-//            else if(strncmp(tmpBuff, SUBSCRIPTION_TOPIC2,
-//                            queueElemRecv.topLen) == 0)
-//            {
-//                GPIO_toggle(Board_GPIO_LED1);
-//            }
-//            else if(strncmp(tmpBuff, SUBSCRIPTION_TOPIC3,
-//                            queueElemRecv.topLen) == 0)
-//            {
-//                GPIO_toggle(Board_GPIO_LED2);
-//            }
-
-                break;
 
             /*msg received by client from remote broker (on a topic      */
             /*subscribed by local client)                                */
