@@ -25,7 +25,7 @@ int create_MqttQueue(){
  * Sends signed value - use when called from ISR
  * Returns FreeRTOS return value
  */
-int sendDebugMsg_MqttQueue(char* topic, char* type, char* action){
+int sendMsg_MqttQueue(char* topic, char* type, char* action){
 
     // Debug before sending within ISR/callback
     mqtt_msg_struct msg;
@@ -48,6 +48,30 @@ int sendDebugMsg_MqttQueue(char* topic, char* type, char* action){
         return SENT_SUCCESS;
 
 }
+
+int receivedMsg_MqttQueue(char* type, char* action){
+
+    // Debug before sending within ISR/callback
+    mqtt_msg_struct msg;
+    memset(msg.topic,'\0',sizeof(msg.topic));
+    memset(msg.type,'\0',sizeof(msg.type));
+    memset(msg.action,'\0',sizeof(msg.action));
+
+    strncpy(msg.type, type, strlen(type));
+    strncpy(msg.action, action, strlen(action));
+    msg.msg_type = RECEIVED_MESSAGE;
+
+    BaseType_t ret_val = xQueueSendFromISR(mqttQueue, (const void*) &msg, pdFALSE);
+
+    // Debug after sending within ISR/callback
+
+    if (ret_val == errQUEUE_FULL)
+        return QUEUE_FULL;
+    else
+        return SENT_SUCCESS;
+
+}
+
 
 int sendCmdMsg_MqttQueue(int type){
 

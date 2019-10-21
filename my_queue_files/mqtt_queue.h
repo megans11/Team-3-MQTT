@@ -51,7 +51,8 @@ QueueHandle_t mqttQueue;
 
 // Public queue functions
 int create_MqttQueue();
-int sendDebugMsg_MqttQueue(char* topic, char* type, char* action);
+int sendMsg_MqttQueue(char* topic, char* type, char* action);
+int receivedMsg_MqttQueue(char* type, char* action);
 int sendCmdMsg_MqttQueue(int type);
 int readMsg_MqttQueue(mqtt_msg_struct *msg_buffer);
 

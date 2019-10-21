@@ -409,10 +409,6 @@ void * MqttClient(void *pvParameters)
             UART_PRINT("Topic: %s\n\r", publish_topic);
             UART_PRINT("Data: %s\n\r", publish_data);
 #endif
-            /* Clear and enable again the SW2 interrupt */
-            GPIO_clearInt(Board_GPIO_BUTTON0);     // SW2
-            GPIO_enableInt(Board_GPIO_BUTTON0);     // SW2
-
             break;
 
             /*msg received by client from remote broker (on a topic      */
@@ -944,7 +940,6 @@ void mainThread(void * args)
     SlNetUtil_init(0);
 
     GPIO_init();
-//    SPI_init();
 
     /*Configure the UART                                                     */
     tUartHndl = InitTerm();
@@ -956,8 +951,7 @@ void mainThread(void * args)
     priParam.sched_priority = SPAWN_TASK_PRIORITY;
     retc = pthread_attr_setschedparam(&pAttrs_spawn, &priParam);
     retc |= pthread_attr_setstacksize(&pAttrs_spawn, TASKSTACKSIZE);
-    retc |= pthread_attr_setdetachstate
-                                    (&pAttrs_spawn, PTHREAD_CREATE_DETACHED);
+    retc |= pthread_attr_setdetachstate(&pAttrs_spawn, PTHREAD_CREATE_DETACHED);
 
     retc = pthread_create(&spawn_thread, &pAttrs_spawn, sl_Task, NULL);
 
