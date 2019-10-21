@@ -10,7 +10,9 @@
  */
 void *testThread(void *arg0)
 {
-    char msg_buffer[32];
+    char topic[10];
+    char type[10];
+    char action[32];
 
     // Initiate for tests
     if (create_MqttQueue() != CREATE_QUEUE_SUCCESS) {
@@ -20,7 +22,7 @@ void *testThread(void *arg0)
     init_testTimer();
 
     while (1) {
-        readMsg_MqttQueue(msg_buffer);
+        readMsg_MqttQueue(topic, type, action);
         usleep(100);
     }
 }

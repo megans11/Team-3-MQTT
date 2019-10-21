@@ -715,10 +715,22 @@ void Mqtt_start()
     int32_t retc = 0;
     mq_attr attr;
     unsigned mode = 0;
+//
+//    if (create_MqttQueue() == CREATE_QUEUE_FAILURE) {
+//        gInitState &= ~MQTT_INIT_STATE;
+////        UART_PRINT("MQTT thread create fail\n\r");
+//        return;
+//    }
 
-    if (create_MqttQueue() == CREATE_QUEUE_FAILURE) {
+    /*sync object for inter thread communication                             */
+    attr.mq_maxmsg = 10;
+    attr.mq_msgsize = sizeof(struct msgQueue);
+    g_PBQueue = mq_open("g_PBQueue", O_CREAT, mode, &attr);
+
+    if(g_PBQueue == NULL)
+    {
+        UART_PRINT("MQTT Message Queue create fail\n\r");
         gInitState &= ~MQTT_INIT_STATE;
-//        UART_PRINT("MQTT thread create fail\n\r");
         return;
     }
 

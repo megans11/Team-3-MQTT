@@ -25,15 +25,19 @@ int create_MqttQueue(){
  * Sends signed value - use when called from ISR
  * Returns FreeRTOS return value
  */
-int sendDebugMsg_MqttQueue(char* debug_msg){
+int sendDebugMsg_MqttQueue(char* topic, char* type, char* action){
 
     // Debug before sending within ISR/callback
-    char msg[UART_QUEUE_WIDTH];
-    memset(msg,'\0',UART_QUEUE_WIDTH);
-    strncpy(&msg[1], debug_msg, strlen(debug_msg));
-    msg[0] = MSG_TYPE_DEBUG;
+    mqtt_msg_struct msg;
+    memset(msg.topic,'\0',sizeof(msg.topic));
+    memset(msg.type,'\0',sizeof(msg.type));
+    memset(msg.action,'\0',sizeof(msg.action));
 
-    BaseType_t ret_val = xQueueSendFromISR(mqttQueue, (const void*) msg, pdFALSE);
+    strncpy(msg.topic, topic, strlen(topic));
+    strncpy(msg.type, type, strlen(type));
+    strncpy(msg.action, action, strlen(action));
+
+    BaseType_t ret_val = xQueueSendFromISR(mqttQueue, (const void*) &msg, pdFALSE);
 
     // Debug after sending within ISR/callback
 
@@ -47,29 +51,33 @@ int sendDebugMsg_MqttQueue(char* debug_msg){
 /**
  * Blocking read from Queue 1. Fills correct buffer, return type specifies type received.
  */
-int readMsg_MqttQueue(char *debug_buffer){
-    char msg_buffer[UART_QUEUE_WIDTH];
-    char *msg_ptr;
+int readMsg_MqttQueue(char topic[10], char type[10], char action[32]){
+    mqtt_msg_struct msg_buffer;
 
     // Debug before receiving from queue in ISR
 //    dbgOutputLoc(0);
-    int read_status = xQueueReceive(mqttQueue, (void*) msg_buffer, portMAX_DELAY);
+    int read_status = xQueueReceive(mqttQueue, (void*) &msg_buffer, portMAX_DELAY);
 //    dbgOutputLoc(0);
 
     // Block until message, check if valid
     if (read_status == pdTRUE) {
+        // For now:
+        strncpy(topic, msg_buffer.topic, strlen(msg_buffer.topic));
+        strncpy(type, msg_buffer.type, strlen(msg_buffer.type));
+        strncpy(action, msg_buffer.action, strlen(msg_buffer.action));
 
         // Fill correct buffer
-        switch (msg_buffer[0]){
-            case MSG_TYPE_DEBUG:
-                msg_ptr = &msg_buffer[1];
-                memcpy(debug_buffer, msg_ptr, strlen(msg_ptr));
-                debug_buffer[strlen(msg_ptr)] = '\0';
-                return MSG_TYPE_DEBUG;
+//        switch (msg_buffer[0]){
+//            case MSG_TYPE_DEBUG:
+//                msg_ptr = &msg_buffer[1];
+//                memcpy(debug_buffer, msg_ptr, strlen(msg_ptr));
+//                debug_buffer[strlen(msg_ptr)] = '\0';
+//                return MSG_TYPE_DEBUG;
+//
+//            default:
+//                errorRoutine(0);
+        return READ_SUCCESS;
 
-            default:
-                errorRoutine(0);
-        }
     }
     return READ_FAILURE;
 }

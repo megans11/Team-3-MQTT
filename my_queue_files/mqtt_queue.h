@@ -15,9 +15,16 @@
 #include <queue.h>
 #include "debug.h"
 
+// message format
+typedef struct {
+   char topic[10];
+   char type[10];
+   char action[32];
+} mqtt_msg_struct;
+
 // queue parameters
 #define UART_QUEUE_LENGTH 16
-#define UART_QUEUE_WIDTH 33 // number of characters allowed
+#define UART_QUEUE_WIDTH sizeof(mqtt_msg_struct) // number of characters allowed
 
 // Return value definitions
 #define CREATE_QUEUE_FAILURE -1
@@ -37,8 +44,8 @@ QueueHandle_t mqttQueue;
 
 // Public queue functions
 int create_MqttQueue();
-int sendDebugMsg_MqttQueue(char* debug_msg);
-int readMsg_MqttQueue(char *debug_msg);
+int sendDebugMsg_MqttQueue(char* topic, char* type, char* action);
+int readMsg_MqttQueue(char* topic, char* type, char* action);
 
 
 #endif /* SENSOR_QUEUE_H_ */
