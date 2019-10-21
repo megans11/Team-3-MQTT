@@ -12,7 +12,7 @@ void *testThread(void *arg0)
 {
     mqtt_msg_struct msg_buffer;
 
-    // Initiate for tests
+    // Initiate for tests (mqttQueue)
     if (create_MqttQueue() != CREATE_QUEUE_SUCCESS) {
         while (1) {} // failed
     }

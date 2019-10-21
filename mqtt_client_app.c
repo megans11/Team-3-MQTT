@@ -121,18 +121,18 @@
 #define RETAIN_ENABLE            1
 
 /* Defining Number of subscription topics                                    */
-#define SUBSCRIPTION_TOPIC_COUNT 4
+#define SUBSCRIPTION_TOPIC_COUNT 2
 
 /* Defining Subscription Topic Values                                        */
-#define SUBSCRIPTION_TOPIC0      "/Broker/To/cc32xx"
-#define SUBSCRIPTION_TOPIC1      "/cc3200/ToggleLEDCmdL1"
-#define SUBSCRIPTION_TOPIC2      "/cc3200/ToggleLEDCmdL2"
-#define SUBSCRIPTION_TOPIC3      "/cc3200/ToggleLEDCmdL3"
+#define SUBSCRIPTION_TOPIC0      "/cc3200/Debug"
+#define SUBSCRIPTION_TOPIC1      "/cc3200/Statistics"
+
 
 /* Defining Publish Topic Values                                             */
-#define PUBLISH_TOPIC0           "/cc32xx/ButtonPressEvtSw2"
-#define PUBLISH_TOPIC0_DATA \
-    "Push Button SW2 has been pressed on CC32xx device"
+#define PUBLISH_TOPIC0           "/cc32xx/Debug"
+#define PUBLISH_TOPIC0_DATA      "Debug Data"
+#define PUBLISH_TOPIC1           "/cc32xx/Statistics"
+#define PUBLISH_TOPIC1_DATA      "Statistics Data"
 
 /* Spawn task priority and Task and Thread Stack Size                        */
 #define TASKSTACKSIZE            2048
@@ -181,6 +181,11 @@ int32_t MqttServer_start();
 int32_t MqttClient_start();
 int32_t MQTT_SendMsgToQueue(struct msgQueue *queueElement);
 
+
+int32_t MQTT_connect();
+int16_t MQTT_subscribe();
+int16_t MQTT_publish(char * pubTopic, char * pubData);
+
 //*****************************************************************************
 //                 GLOBAL VARIABLES
 //*****************************************************************************
@@ -212,15 +217,14 @@ const char *ClientPassword = "pwd1";
 
 /* Subscription topics and qos values                                        */
 char *topic[SUBSCRIPTION_TOPIC_COUNT] =
-{ SUBSCRIPTION_TOPIC0, SUBSCRIPTION_TOPIC1, \
-    SUBSCRIPTION_TOPIC2, SUBSCRIPTION_TOPIC3 };
+{ SUBSCRIPTION_TOPIC0, SUBSCRIPTION_TOPIC1};
 
 unsigned char qos[SUBSCRIPTION_TOPIC_COUNT] =
-{ MQTT_QOS_2, MQTT_QOS_2, MQTT_QOS_2, MQTT_QOS_2 };
+{ MQTT_QOS_2, MQTT_QOS_2};
 
 /* Publishing topics and messages                                            */
-const char *publish_topic = { PUBLISH_TOPIC0 };
-const char *publish_data = { PUBLISH_TOPIC0_DATA };
+const char *publish_topic = { PUBLISH_TOPIC0, PUBLISH_TOPIC1};
+const char *publish_data = { PUBLISH_TOPIC0_DATA, PUBLISH_TOPIC1_DATA};
 
 /* Message Queue                                                             */
 mqd_t g_PBQueue;
@@ -391,24 +395,45 @@ void * MqttClient(void *pvParameters)
 
         switch(msg_buffer.msg_type)
         {
-            case PUBLISH_MESSAGE:
+        case PUBLISH_PUSH_BUTTON_PRESSED:
 
-                //TODO: combine msg_buffer.type, msg_buffer.action into publish_data using JSON parse
-
-                // END TODO
-
-                /*send publish message                                       */
-                lRetVal =
-                    MQTTClient_publish(gMqttClient, (char*) msg_buffer.topic,
-                                       strlen((char*)msg_buffer.topic),
-                                      (char*)publish_data,
-                                      strlen((char*) publish_data), MQTT_QOS_2 |
-                                      ((RETAIN_ENABLE) ? MQTT_PUBLISH_RETAIN : 0));
+            /*send publish message                                       */
+            lRetVal =
+                MQTTClient_publish(gMqttClient, (char*) publish_topic, strlen(
+                                      (char*)publish_topic),
+                                  (char*)publish_data,
+                                  strlen((char*) publish_data), MQTT_QOS_2 |
+                                  ((RETAIN_ENABLE) ? MQTT_PUBLISH_RETAIN : 0));
 #ifdef DEBUG_MODE
-                UART_PRINT("\n\r CC3200 Publishes the following message \n\r");
-                UART_PRINT("Topic: %s\n\r", publish_topic);
-                UART_PRINT("Data: %s\n\r", publish_data);
+            UART_PRINT("\n\r CC3200 Publishes the following message \n\r");
+            UART_PRINT("Topic: %s\n\r", publish_topic);
+            UART_PRINT("Data: %s\n\r", publish_data);
 #endif
+            /* Clear and enable again the SW2 interrupt */
+            GPIO_clearInt(Board_GPIO_BUTTON0);     // SW2
+            GPIO_enableInt(Board_GPIO_BUTTON0);     // SW2
+
+            break;
+
+        /*msg received by client from remote broker (on a topic      */
+        /*subscribed by local client)                                */
+        case MSG_RECV_BY_CLIENT:
+            tmpBuff = (char *) ((char *) queueElemRecv.msgPtr + 12);
+            if(strncmp
+                (tmpBuff, SUBSCRIPTION_TOPIC1, queueElemRecv.topLen) == 0)
+            {
+                GPIO_toggle(Board_GPIO_LED0);
+            }
+//            else if(strncmp(tmpBuff, SUBSCRIPTION_TOPIC2,
+//                            queueElemRecv.topLen) == 0)
+//            {
+//                GPIO_toggle(Board_GPIO_LED1);
+//            }
+//            else if(strncmp(tmpBuff, SUBSCRIPTION_TOPIC3,
+//                            queueElemRecv.topLen) == 0)
+//            {
+//                GPIO_toggle(Board_GPIO_LED2);
+//            }
 
                 break;
 
@@ -1010,8 +1035,8 @@ void mainThread(void * args)
         gResetApplication = false;
         topic[0] = SUBSCRIPTION_TOPIC0;
         topic[1] = SUBSCRIPTION_TOPIC1;
-        topic[2] = SUBSCRIPTION_TOPIC2;
-        topic[3] = SUBSCRIPTION_TOPIC3;
+//        topic[2] = SUBSCRIPTION_TOPIC2;
+//        topic[3] = SUBSCRIPTION_TOPIC3;
         gInitState = 0;
 
         /*Connect to AP                                                      */
@@ -1042,6 +1067,107 @@ void mainThread(void * args)
         UART_PRINT("reopen MQTT # %d  \r\n", ++count);
     }
 }
+
+/**
+ * New version of the MQTT connecting method.
+ */
+int32_t MQTT_connect()
+{
+    int32_t lRetVal;
+    char SSID_Remote_Name[32];
+    int8_t Str_Length;
+
+    memset(SSID_Remote_Name, '\0', sizeof(SSID_Remote_Name));
+    Str_Length = strlen(SSID_NAME);
+
+    if(Str_Length)
+    {
+        /*Copy the Default SSID to the local variable                        */
+        strncpy(SSID_Remote_Name, SSID_NAME, Str_Length);
+    }
+
+    /*Reset The state of the machine                                         */
+    Network_IF_ResetMCUStateMachine();
+
+    /*Start the driver                                                       */
+    lRetVal = Network_IF_InitDriver(ROLE_STA);
+    if(lRetVal < 0)
+    {
+//        UART_PRINT("Failed to start SimpleLink Device\n\r", lRetVal);
+        return(-1);
+    }
+
+    /*Initialize AP security params                                          */
+    SecurityParams.Key = (signed char *) SECURITY_KEY;
+    SecurityParams.KeyLen = strlen(SECURITY_KEY);
+    SecurityParams.Type = SECURITY_TYPE;
+
+    /*Connect to the Access Point                                            */
+    lRetVal = Network_IF_ConnectAP(SSID_Remote_Name, SecurityParams);
+    if(lRetVal < 0)
+    {
+//        UART_PRINT("Connection to an AP failed\n\r");
+        return(-1);
+    }
+
+//        sleep(1);
+
+    return(0);
+}
+
+/**
+ * New version of subscribing
+ */
+int16_t MQTT_subscribe()
+{
+    /*Subscribe to topics when session is not stored by the server       */
+    uint8_t subIndex;
+    MQTTClient_SubscribeParams subscriptionInfo[
+        SUBSCRIPTION_TOPIC_COUNT];
+    uint32_t iCount;
+
+    for(subIndex = 0; subIndex < SUBSCRIPTION_TOPIC_COUNT; subIndex++)
+    {
+        subscriptionInfo[subIndex].topic = topic[subIndex];
+        subscriptionInfo[subIndex].qos = qos[subIndex];
+    }
+
+    if(MQTTClient_subscribe(gMqttClient, subscriptionInfo,
+                            SUBSCRIPTION_TOPIC_COUNT) < 0)
+    {
+//        UART_PRINT("\n\r Subscription Error \n\r");
+        MQTTClient_disconnect(gMqttClient);
+        gUiConnFlag = 0;
+        return 0;
+    }
+    else
+    {
+        for(iCount = 0; iCount < SUBSCRIPTION_TOPIC_COUNT; iCount++)
+        {
+//            UART_PRINT("Client subscribed on %s\n\r,", topic[iCount]);
+            //print to console
+        }
+        return -1;
+    }
+}
+
+/**
+ * New version of publishing
+ */
+int16_t MQTT_publish(char * pubTopic, char * pubData)
+{
+    //publish topic is either PUBLISH_TOPIC0 or PUBLISH_TOPIC1
+    //*publish_topic
+    //*publish_data
+
+    //int16_t MQTTClient_publish(MQTTClient_Handle handle, char *topic, uint16_t topicLen, char *msg, uint16_t msgLen, uint32_t flags);
+
+    int16_t lRetVal = MQTTClient_publish(gMqttClient, (char*) pubTopic, strlen((char*)pubTopic),
+                                      (char*)pubData, strlen((char*) pubData),
+                                      MQTT_QOS_2 |((RETAIN_ENABLE) ? MQTT_PUBLISH_RETAIN : 0));
+    return lRetVal;
+}
+
 
 //*****************************************************************************
 //
