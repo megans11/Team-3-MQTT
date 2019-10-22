@@ -48,6 +48,7 @@
 
 /* Application includes                                                      */
 #include "client_cbs.h"
+#include "my_queue_files/mqtt_queue.h"
 
 extern bool gResetApplication;
 
@@ -181,53 +182,54 @@ void MqttClientCallback(int32_t event,
         bufSizeReqd += sizeof(struct publishMsgHeader);
         bufSizeReqd += recvMetaData->topLen + 1;
         bufSizeReqd += dataLen + 1;
-        pubBuff = (char *) malloc(bufSizeReqd);
+//        pubBuff = (char *) malloc(bufSizeReqd);
+//
+//        if(pubBuff == NULL)
+//        {
+//            APP_PRINT("malloc failed: recv_cb\n\r");
+//            return;
+//        }
 
-        if(pubBuff == NULL)
-        {
-            APP_PRINT("malloc failed: recv_cb\n\r");
-            return;
-        }
+//        msgHead.topicLen = recvMetaData->topLen;
+//        msgHead.payLen = dataLen;
+//        msgHead.retain = recvMetaData->retain;
+//        msgHead.dup = recvMetaData->dup;
+//        msgHead.qos = recvMetaData->qos;
+//
+//        memcpy((void*) pubBuff, &msgHead, sizeof(struct publishMsgHeader));
+//
+//        /* copying the topic name into the buffer                        */
+//        memcpy((void*) (pubBuff + topicOffset),
+//               (const void*)recvMetaData->topic,
+//               recvMetaData->topLen);
+//        memset((void*) (pubBuff + topicOffset + recvMetaData->topLen),'\0',1);
+//
+//        /* copying the payload into the buffer                           */
+//        memcpy((void*) (pubBuff + payloadOffset), (const void*) data, dataLen);
+//        memset((void*) (pubBuff + payloadOffset + dataLen), '\0', 1);
+//
+//        APP_PRINT("\n\rMsg Recvd. by client\n\r");
+//        APP_PRINT("TOPIC: %s\n\r", pubBuff + topicOffset);
+//        APP_PRINT("PAYLOAD: %s\n\r", pubBuff + payloadOffset);
+//        APP_PRINT("QOS: %d\n\r", recvMetaData->qos);
 
-        msgHead.topicLen = recvMetaData->topLen;
-        msgHead.payLen = dataLen;
-        msgHead.retain = recvMetaData->retain;
-        msgHead.dup = recvMetaData->dup;
-        msgHead.qos = recvMetaData->qos;
-        memcpy((void*) pubBuff, &msgHead, sizeof(struct publishMsgHeader));
-
-        /* copying the topic name into the buffer                        */
-        memcpy((void*) (pubBuff + topicOffset),
-               (const void*)recvMetaData->topic,
-               recvMetaData->topLen);
-        memset((void*) (pubBuff + topicOffset + recvMetaData->topLen),'\0',1);
-
-        /* copying the payload into the buffer                           */
-        memcpy((void*) (pubBuff + payloadOffset), (const void*) data, dataLen);
-        memset((void*) (pubBuff + payloadOffset + dataLen), '\0', 1);
-
-        APP_PRINT("\n\rMsg Recvd. by client\n\r");
-        APP_PRINT("TOPIC: %s\n\r", pubBuff + topicOffset);
-        APP_PRINT("PAYLOAD: %s\n\r", pubBuff + payloadOffset);
-        APP_PRINT("QOS: %d\n\r", recvMetaData->qos);
-
-        if(recvMetaData->retain)
-        {
-            APP_PRINT("Retained\n\r");
-        }
-
-        if(recvMetaData->dup)
-        {
-            APP_PRINT("Duplicate\n\r");
-        }
+//        if(recvMetaData->retain)
+//        {
+//            APP_PRINT("Retained\n\r");
+//        }
+//
+//        if(recvMetaData->dup)
+//        {
+//            APP_PRINT("Duplicate\n\r");
+//        }
 
         /* filling the queue element details                              */
-        queueElem.event = MSG_RECV_BY_CLIENT;
-        queueElem.msgPtr = pubBuff;
-        queueElem.topLen = recvMetaData->topLen;
+//        queueElem.event = MSG_RECV_BY_CLIENT;
+//        queueElem.msgPtr = pubBuff;
+//        queueElem.topLen = recvMetaData->topLen;
 
         /* signal to the main task                                        */
-        if(MQTT_SendMsgToQueue(&queueElem))
+        if(receivedMsg_MqttQueue("type", "action") == QUEUE_FULL)
         {
             UART_PRINT("\n\n\rQueue is full\n\n\r");
         }

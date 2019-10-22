@@ -109,7 +109,7 @@
 /* Defining Broker IP address and port Number                                */
 //#define SERVER_ADDRESS           "messagesight.demos.ibm.com"
 //#define SERVER_ADDRESS           "m2m.eclipse.org"
-#define SERVER_IP_ADDRESS        "192.168.1.14"
+#define SERVER_IP_ADDRESS        "192.168.2.3"
 #define PORT_NUMBER              1883
 #define SECURED_PORT_NUMBER      8883
 #define LOOPBACK_PORT            1882
@@ -124,15 +124,15 @@
 #define SUBSCRIPTION_TOPIC_COUNT 2
 
 /* Defining Subscription Topic Values                                        */
-#define SUBSCRIPTION_TOPIC0      "/cc3200/Debug"
-#define SUBSCRIPTION_TOPIC1      "/cc3200/Statistics"
+#define SUBSCRIPTION_TOPIC0      "debug"
+#define SUBSCRIPTION_TOPIC1      "statistics"
 
 
 /* Defining Publish Topic Values                                             */
-#define PUBLISH_TOPIC0           "/cc32xx/Debug"
-#define PUBLISH_TOPIC0_DATA      "Debug Data"
-#define PUBLISH_TOPIC1           "/cc32xx/Statistics"
-#define PUBLISH_TOPIC1_DATA      "Statistics Data"
+#define PUBLISH_TOPIC0           "debug"
+#define PUBLISH_TOPIC0_DATA      "debug data"
+#define PUBLISH_TOPIC1           "statistics"
+#define PUBLISH_TOPIC1_DATA      "statistics data"
 
 /* Spawn task priority and Task and Thread Stack Size                        */
 #define TASKSTACKSIZE            2048
@@ -174,14 +174,13 @@ void Mqtt_start();
 int32_t Mqtt_IF_Connect();
 int32_t MqttServer_start();
 int32_t MqttClient_start();
-int32_t MQTT_SendMsgToQueue(struct msgQueue *queueElement) {};
 
 
 int32_t MQTT_connect();
 int16_t MQTT_subscribe();
 int16_t MQTT_publish(char * pubTopic, char * pubData);
 
-//*****************************************************************************
+//**************************************************************************
 //                 GLOBAL VARIABLES
 //*****************************************************************************
 
@@ -356,7 +355,6 @@ void * MqttClient(void *pvParameters)
 {
     mqtt_msg_struct msg_buffer;
     long lRetVal = -1;
-    char* publish_data;
 
     /*Initializing Client and Subscribing to the Broker.                     */
     if(gApConnectionState >= 0)
@@ -382,7 +380,11 @@ void * MqttClient(void *pvParameters)
     /*from a local client(will be published to the remote broker by the      */
     /*client) OR msg received by the client from the remote broker (need to  */
     /*be sent to the server to see if any local client has subscribed on the */
-    /*same topic).                                                           */
+    /*same topic).
+     */
+    int i = 0;
+    int recv_count = 0;
+    char msg[64];
     for(;; )
     {
         /*waiting for signals                                                */
@@ -398,12 +400,20 @@ void * MqttClient(void *pvParameters)
             //attempt to publish count increase
             pubAttempt++;
 
+
+//            sprintf(msg, "{\"board\" : \"rover\", \"count\": \"%d\", \"msg\": \"test\"}", i);
+//            i += 1;
+            strcpy(msg,
+                   "{\"board\" : \"rover\", \"count\": \"1\", \"msg\": \"test\"}");
+//                   strlen("{\"board\" : \"rover\", \"count\": \"1\", \"msg\": \"test\"}"));
+
             /*send publish message                                       */
+<<<<<<< HEAD
             if(msg_buffer.topic == "debug"){
-                lRetVal = MQTT_publish((char*) publish_topic[0], (char*)publish_data[0]);
+                lRetVal = MQTT_publish((char*) publish_topic[0], msg);
             }
             else if(msg_buffer.topic == "stats"){
-                lRetVal = MQTT_publish((char*) publish_topic[1], (char*)publish_data[1]);
+                lRetVal = MQTT_publish((char*) publish_topic[1], msg);
             }
             
             //if returns success then add to successful publish
@@ -411,21 +421,32 @@ void * MqttClient(void *pvParameters)
                 pubSuccess++;
             }
 
+=======
+            lRetVal =
+                MQTTClient_publish(gMqttClient,
+                                      msg_buffer.topic,
+                                      strlen(msg_buffer.topic),
+                                      msg,
+                                      strlen(msg), MQTT_QOS_2 |
+                                      ((RETAIN_ENABLE) ? MQTT_PUBLISH_RETAIN : 0));
+>>>>>>> working_poorly
 #ifdef DEBUG_MODE
             UART_PRINT("\n\r CC3200 Publishes the following message \n\r");
-            UART_PRINT("Topic: %s\n\r", publish_topic);
-            UART_PRINT("Data: %s\n\r", publish_data);
+            UART_PRINT("Topic: %s\n\r", msg_buffer.topic);
+            UART_PRINT("Data: %s\n\r", msg);
 #endif
             break;
 
             /*msg received by client from remote broker (on a topic      */
             /*subscribed by local client)                                */
             case RECEIVED_MESSAGE:
+                recv_count++;
                 // TODO: add our receive message logic (keep track of received messages)
+#ifdef DEBUG_MODE
+            UART_PRINT("Received message number: %d\n\r", recv_count);
+#endif
+                break;
 
-                //number of received
-
-            break;
 
             /*On-board client disconnected from remote broker, only      */
             /*local MQTT network will work                               */

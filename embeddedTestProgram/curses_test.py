@@ -127,7 +127,7 @@ class displayApp:
 		print("UPDATING DISP 2")
 		print(self.board_stats)
 		for i, board in enumerate(self.boards):
-			if self.per_sec["total"][i] > 10:
+			if self.per_sec["total"][i] > 9.5:
 				status = "Yes"
 			else:
 				status = "No"
@@ -186,7 +186,7 @@ def main(stdscr):
 	client = mqtt.Client()
 	client.on_connect = on_connect
 	client.on_message = on_message
-	client.connect("127.0.0.1", 1883, 60)
+	client.connect("192.168.2.3", 1883, 60)
 
 	client.loop_forever()
 
