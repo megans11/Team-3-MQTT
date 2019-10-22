@@ -18,9 +18,9 @@
 // message format
 typedef struct {
    int  msg_type;
-   char topic[10];
-   char type[10];
-   char action[32];
+   char topic[16];
+   char type[16];
+   char action[64];
 } mqtt_msg_struct;
 
 #define DEBUG_MODE

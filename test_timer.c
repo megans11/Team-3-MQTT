@@ -12,7 +12,7 @@
  * This callback sends the time since last ISR call in ms to queue 1
  */
 void testTimerCallback(Timer_Handle myHandle) {
-    sendMsg_MqttQueue("debug", "Test", "hello World");
+    sendMsg_MqttQueue("/cc32xx/Debug", "Test", "Hello World!");
 }
 
 int init_testTimer() {
