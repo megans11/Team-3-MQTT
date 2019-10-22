@@ -23,7 +23,7 @@ typedef struct {
    char action[64];
 } mqtt_msg_struct;
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 
 // queue parameters
 #define UART_QUEUE_LENGTH 16

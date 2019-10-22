@@ -124,15 +124,15 @@
 #define SUBSCRIPTION_TOPIC_COUNT 2
 
 /* Defining Subscription Topic Values                                        */
-#define SUBSCRIPTION_TOPIC0      "/cc32xx/Debug"
-#define SUBSCRIPTION_TOPIC1      "/cc32xx/Statistics"
+#define SUBSCRIPTION_TOPIC0      "debug"
+#define SUBSCRIPTION_TOPIC1      "statistics"
 
 
 /* Defining Publish Topic Values                                             */
-#define PUBLISH_TOPIC0           "/cc32xx/Debug"
-#define PUBLISH_TOPIC0_DATA      "Debug Data"
-#define PUBLISH_TOPIC1           "/cc32xx/Statistics"
-#define PUBLISH_TOPIC1_DATA      "Statistics Data"
+#define PUBLISH_TOPIC0           "debug"
+#define PUBLISH_TOPIC0_DATA      "debug data"
+#define PUBLISH_TOPIC1           "statistics"
+#define PUBLISH_TOPIC1_DATA      "statistics data"
 
 /* Spawn task priority and Task and Thread Stack Size                        */
 #define TASKSTACKSIZE            2048
@@ -174,7 +174,6 @@ void Mqtt_start();
 int32_t Mqtt_IF_Connect();
 int32_t MqttServer_start();
 int32_t MqttClient_start();
-int32_t MQTT_SendMsgToQueue(struct msgQueue *queueElement) {};
 
 
 int32_t MQTT_connect();
