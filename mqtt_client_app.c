@@ -369,6 +369,12 @@ void * MqttClient(void *pvParameters)
             return(NULL);
         }
     }
+    
+    //Counters for publish and receive
+    static int pubAttempt = 0;
+    static int pubSuccess = 0;
+    static int recAttempt = 0;
+    static int recSuccess = 0;
 
     /*handling the signals from various callbacks including the push button  */
     /*prompting the client to publish a msg on PUB_TOPIC OR msg received by  */
@@ -388,6 +394,9 @@ void * MqttClient(void *pvParameters)
         switch(msg_buffer.msg_type)
         {
         case PUBLISH_MESSAGE:
+        
+            //attempt to publish count increase
+            pubAttempt++;
 
             /*send publish message                                       */
             if(msg_buffer.topic == "Debug"){
@@ -395,6 +404,11 @@ void * MqttClient(void *pvParameters)
             }
             else if(msg_buffer.topic == "Stats"){
                 lRetVal = MQTT_publish((char*) publish_topic[1], (char*)publish_data[1]);
+            }
+            
+            //if returns success then add to successful publish
+            if(lRetVal >= 0){ //failure is a negative number
+                pubSuccess++;
             }
 
 #ifdef DEBUG_MODE
@@ -409,22 +423,7 @@ void * MqttClient(void *pvParameters)
             case RECEIVED_MESSAGE:
                 // TODO: add our receive message logic (keep track of received messages)
 
-                if(msg_buffer.topic == "Debug"){
-                    lRetVal =
-                            MQTTClient_publish(gMqttClient, (char*) publish_topic[0], strlen(
-                                      (char*)publish_topic[0]),
-                                      (char*)publish_data[0],
-                                       strlen((char*) publish_data[0]), MQTT_QOS_2 |
-                                       ((RETAIN_ENABLE) ? MQTT_PUBLISH_RETAIN : 0));
-                }
-                else if(msg_buffer.topic == "Stats"){
-                    lRetVal =
-                            MQTTClient_publish(gMqttClient, (char*) publish_topic[1], strlen(
-                                      (char*)publish_topic[1]),
-                                       (char*)publish_data[1],
-                                       strlen((char*) publish_data[1]), MQTT_QOS_2 |
-                                       ((RETAIN_ENABLE) ? MQTT_PUBLISH_RETAIN : 0));
-                }
+                //number of received
 
             break;
 
