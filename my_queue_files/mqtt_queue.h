@@ -24,9 +24,11 @@ typedef struct {
 } mqtt_msg_struct;
 
 #define DEBUG_MODE
+#define BOARD_NAME "sensor"
+
 
 // queue parameters
-#define UART_QUEUE_LENGTH 16
+#define UART_QUEUE_LENGTH 32
 #define UART_QUEUE_WIDTH sizeof(mqtt_msg_struct) // number of characters allowed
 
 // Return value definitions

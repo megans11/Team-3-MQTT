@@ -18,7 +18,8 @@ client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
 
-client.connect("127.0.0.1", 1883, 60)
+client.connect("192.168.2.3", 1883, 60)
+# client.connect("127.0.0.1", 1883, 60)
 i = 0
 while (1):
 	i += 1
@@ -33,5 +34,12 @@ while (1):
 	client.publish("config",'{{"board" : "cannon", "count": "{}", "msg": "TEST2"}}'.format(i)) 
 	client.publish("config",'{{"board" : "sensor", "count": "{}", "msg": "TEST3"}}'.format(i)) 
 	sleep(.04)
+	client.publish("stats",'{{"board" : "rover", "received": "{}"}}'.format(i)) 
+	client.publish("stats",'{{"board" : "arm", "received": "{}"}}'.format(i)) 
+	client.publish("stats",'{{"board" : "cannon", "received": "{}"}}'.format(i)) 
+	client.publish("stats",'{{"board" : "sensor", "received": "{}"}}'.format(i)) 
+	sleep(.02)
 	print("Pub {}".format(i))
+
+
 

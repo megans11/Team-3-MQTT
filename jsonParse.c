@@ -21,7 +21,7 @@ static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
 
 
 
-void parseAction(char* JSON_STRING, char* myType, char* myAction)
+int parseAction(char* JSON_STRING, char* myType, char* myAction)
 {
   int i;
   int r;
@@ -31,13 +31,13 @@ void parseAction(char* JSON_STRING, char* myType, char* myAction)
   r = jsmn_parse(&p, JSON_STRING, strlen(JSON_STRING), t, sizeof(t) / sizeof(t[0]));
   if (r < 0) {
     printf("Failed to parse JSON: %d\n", r);
-    return 1;
+    return -1;
   }
 
   /* Assume the top-level element is an object */
   if (r < 1 || t[0].type != JSMN_OBJECT) {
     printf("Object expected\n");
-    return 1;
+    return -1;
   }
 
   /* Loop over all keys of the root object */
@@ -69,18 +69,18 @@ void parseAction(char* JSON_STRING, char* myType, char* myAction)
   return EXIT_SUCCESS;
 }
 
-
-int main()
-{
-	char* myString = "{\"type\": \"shooter\", \"action\": motorOn}";
-	char* myType = malloc(sizeof(char)*10 + 1);
-	char* myAction = malloc(sizeof(char)*10 + 1);
-	memset(myType, '\0', sizeof(myType));
-	memset(myAction, '\0', sizeof(myAction));
-
-	parseAction(myString, myType, myAction);
-	printf("the type: ");
-	printf(myType);
-	printf("\nthe action: ");
-	printf(myAction);
-}
+//
+//int main()
+//{
+//	char* myString = "{\"type\": \"shooter\", \"action\": motorOn}";
+//	char* myType = malloc(sizeof(char)*10 + 1);
+//	char* myAction = malloc(sizeof(char)*10 + 1);
+//	memset(myType, '\0', sizeof(myType));
+//	memset(myAction, '\0', sizeof(myAction));
+//
+//	parseAction(myString, myType, myAction);
+//	printf("the type: ");
+//	printf(myType);
+//	printf("\nthe action: ");
+//	printf(myAction);
+//}

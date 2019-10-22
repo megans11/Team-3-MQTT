@@ -16,12 +16,12 @@ class displayApp:
 		self.cap =      ".-------------------------------------------------------------------------------."
 		self.bottom =   "'-------------------------------------------------------------------------------'"
 		self.div =      "|-------------------------------------------------------------------------------|"
-		self.header1  =  "|  Topic  |     Rover    |     Arm      |    Cannon    |    Sensor    |  Total  |"
+		self.header1  =  "|  Topic  |     Arm      |     Rover    |    Cannon    |    Sensor    |  Total  |"
 		self.header2 = "|         | /sec | total | /sec | total | /sec | total | /sec | total |         |"
 		self.row =    "|{:>8} |{:>5} |{:>6} |{:>5} |{:>6} |{:>5} |{:>6} |{:>5} |{:>6} |{:>8} |"
 		self.board_header = "|  Board  | Pub Attempts |   Success  |   Failed   |  Rec  | Last Time  |  Good |"
 		self.board_row = "|{:>8} |{:>13} |{:>11} |{:>11} |{:>6} |{:>11} |{:>6} |"
-		self.topics = ["config", "debug", "stats"]
+		self.topics = ["debug", "stats", "rover", "arm", "cannon", "sensor"]
 		self.stdscr = stdscr
 
 		self.counts = {}
@@ -99,23 +99,23 @@ class displayApp:
 
 
 	def update(self):
-		
+		# print("UPDATING DISP")
 		diff = time() - self.last_time
 		if (diff > 1):
 			self.per_sec["total"] = [0,0,0,0]
 			for topic in self.topics:
 				self.per_sec["total"][0] += (self.counts[topic][0] - self.last_sec[topic][0])/diff
-				self.per_sec["total"][1] += (self.counts[topic][0] - self.last_sec[topic][0])/diff
-				self.per_sec["total"][2] += (self.counts[topic][0] - self.last_sec[topic][0])/diff
-				self.per_sec["total"][3] += (self.counts[topic][0] - self.last_sec[topic][0])/diff
-				self.per_sec[topic][0] = int((self.counts[topic][0] - self.last_sec[topic][0])/diff)
-				self.per_sec[topic][1] = int((self.counts[topic][1] - self.last_sec[topic][1])/diff)
-				self.per_sec[topic][2] = int((self.counts[topic][2] - self.last_sec[topic][2])/diff)
-				self.per_sec[topic][3] = int((self.counts[topic][3] - self.last_sec[topic][3])/diff)
+				self.per_sec["total"][1] += (self.counts[topic][1] - self.last_sec[topic][1])/diff
+				self.per_sec["total"][2] += (self.counts[topic][2] - self.last_sec[topic][2])/diff
+				self.per_sec["total"][3] += (self.counts[topic][3] - self.last_sec[topic][3])/diff
+				self.per_sec[topic][0] = round((self.counts[topic][0] - self.last_sec[topic][0])/diff)
+				self.per_sec[topic][1] = round((self.counts[topic][1] - self.last_sec[topic][1])/diff)
+				self.per_sec[topic][2] = round((self.counts[topic][2] - self.last_sec[topic][2])/diff)
+				self.per_sec[topic][3] = round((self.counts[topic][3] - self.last_sec[topic][3])/diff)
 			self.last_sec = copy.deepcopy(self.counts)
 			self.last_time = time()
 
-		print("UPDATING DISP 1")
+		# print("UPDATING DISP 1")
 		for i, topic in enumerate(self.topics):
 			self.stdscr.addstr(i+6, 0, self.row.format(topic,
 														self.per_sec[topic][0], self.counts[topic][0],
@@ -124,8 +124,8 @@ class displayApp:
 														self.per_sec[topic][3], self.counts[topic][3],
 														self.counts[topic][4]))
 
-		print("UPDATING DISP 2")
-		print(self.board_stats)
+		# print("UPDATING DISP 2")
+		# print(self.board_stats)
 		for i, board in enumerate(self.boards):
 			if self.per_sec["total"][i] > 9.5:
 				status = "Yes"
@@ -138,9 +138,9 @@ class displayApp:
 																																						self.board_stats[board]["msg_received"],
 																																						self.board_stats[board]["last_time"],
 																																						status))
-		print("UPDATING DISP 3")
+		# print("UPDATING DISP 3")
 		self.stdscr.refresh()
-		print("UPDATING DISP 4")
+		# print("UPDATING DISP 4")
 
 
 myApp = displayApp()
@@ -149,28 +149,29 @@ myApp = displayApp()
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
 
-    topic_list = ["debug", "config", "stats"]
-
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
-    for topic in topic_list:
+    for topic in myApp.topics:
     	client.subscribe(topic)
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
-	board_pos_map = {"rover" : 0, "arm": 1, "cannon": 2, "sensor" : 3}
+	board_pos_map = {"rover" : 1, "arm": 0, "cannon": 2, "sensor" : 3}
 
-	print(msg.topic+" "+str(msg.payload))
+	# print(msg.topic+" "+str(msg.payload))
 	# parse
 	msg_dict = json.loads(msg.payload)
 
-	# update stats
-	myApp.counts[msg.topic][board_pos_map[msg_dict["board"]]] += 1
-	myApp.counts[msg.topic][4] += 1
+	if (msg.topic == "stats") :
+		myApp.board_stats[msg_dict["board"]]["msg_received"] = msg_dict["received"]
+	else:
+		# update stats
+		myApp.counts[msg.topic][board_pos_map[msg_dict["board"]]] += 1
+		myApp.counts[msg.topic][4] += 1
 
-	myApp.board_stats[msg_dict["board"]]["pub_attempts"] = int(msg_dict["count"])
-	myApp.board_stats[msg_dict["board"]]["pub_success"] += 1
-	myApp.board_stats[msg_dict["board"]]["last_time"] = datetime.fromtimestamp(time()).strftime("%X")
+		myApp.board_stats[msg_dict["board"]]["pub_attempts"] = int(msg_dict["count"])
+		myApp.board_stats[msg_dict["board"]]["pub_success"] += 1
+		myApp.board_stats[msg_dict["board"]]["last_time"] = datetime.fromtimestamp(time()).strftime("%X")
 
 	if myApp.counts[msg.topic][4] % 25 == 0:
 		myApp.update()
@@ -187,6 +188,7 @@ def main(stdscr):
 	client.on_connect = on_connect
 	client.on_message = on_message
 	client.connect("192.168.2.3", 1883, 60)
+	# client.connect("127.0.0.1", 1883, 60)
 
 	client.loop_forever()
 

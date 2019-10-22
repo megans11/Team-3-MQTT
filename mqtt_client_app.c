@@ -371,8 +371,6 @@ void * MqttClient(void *pvParameters)
     //Counters for publish and receive
     static int pubAttempt = 0;
     static int pubSuccess = 0;
-    static int recAttempt = 0;
-    static int recSuccess = 0;
 
     /*handling the signals from various callbacks including the push button  */
     /*prompting the client to publish a msg on PUB_TOPIC OR msg received by  */
@@ -382,7 +380,6 @@ void * MqttClient(void *pvParameters)
     /*be sent to the server to see if any local client has subscribed on the */
     /*same topic).
      */
-    int i = 0;
     int recv_count = 0;
     char msg[64];
     for(;; )
@@ -401,47 +398,55 @@ void * MqttClient(void *pvParameters)
             pubAttempt++;
 
 
-//            sprintf(msg, "{\"board\" : \"rover\", \"count\": \"%d\", \"msg\": \"test\"}", i);
-//            i += 1;
-            strcpy(msg,
-                   "{\"board\" : \"rover\", \"count\": \"1\", \"msg\": \"test\"}");
-//                   strlen("{\"board\" : \"rover\", \"count\": \"1\", \"msg\": \"test\"}"));
 
-            /*send publish message                                       */
-<<<<<<< HEAD
+            sprintf(msg, "{\"board\" : \"%s\", \"count\": \"%d\", \"msg\": \"test\"}\0", BOARD_NAME,  pubAttempt);
+
+
+/*
             if(msg_buffer.topic == "debug"){
-                lRetVal = MQTT_publish((char*) publish_topic[0], msg);
+                lRetVal = MQTT_publish(publish_topic[0], msg);
             }
             else if(msg_buffer.topic == "stats"){
-                lRetVal = MQTT_publish((char*) publish_topic[1], msg);
+                lRetVal = MQTT_publish(publish_topic[1], msg);
             }
-            
+*/
+
+            /*send publish message                                       */
+            lRetVal = MQTT_publish(msg_buffer.topic, msg);
+
             //if returns success then add to successful publish
             if(lRetVal >= 0){ //failure is a negative number
+#ifdef DEBUG_MODE
+                UART_PRINT("\n\r CC3200 Publishes the following message \n\r");
+                UART_PRINT("Topic: %s\n\r", msg_buffer.topic);
+                UART_PRINT("Data: %s\n\r", msg);
+                UART_PRINT("Message number: %d\n\r", pubSuccess);
+#endif
                 pubSuccess++;
             }
 
-=======
-            lRetVal =
-                MQTTClient_publish(gMqttClient,
-                                      msg_buffer.topic,
-                                      strlen(msg_buffer.topic),
-                                      msg,
-                                      strlen(msg), MQTT_QOS_2 |
-                                      ((RETAIN_ENABLE) ? MQTT_PUBLISH_RETAIN : 0));
->>>>>>> working_poorly
-#ifdef DEBUG_MODE
-            UART_PRINT("\n\r CC3200 Publishes the following message \n\r");
-            UART_PRINT("Topic: %s\n\r", msg_buffer.topic);
-            UART_PRINT("Data: %s\n\r", msg);
-#endif
-            break;
+   break;
 
             /*msg received by client from remote broker (on a topic      */
             /*subscribed by local client)                                */
             case RECEIVED_MESSAGE:
                 recv_count++;
-                // TODO: add our receive message logic (keep track of received messages)
+
+                if (recv_count % 10 == 0){
+                    sprintf(msg,"{\"board\" : \"%s\", \"received\": \"%d\"}\0", BOARD_NAME,  recv_count);
+                    lRetVal = MQTT_publish("stats", msg);
+                    pubAttempt;
+
+                    if(lRetVal >= 0){ //failure is a negative number
+#ifdef DEBUG_MODE
+                        UART_PRINT("\n\r CC3200 Publishes the following message \n\r");
+                        UART_PRINT("Topic: %s\n\r", "stats");
+                        UART_PRINT("Data: %s\n\r", msg);
+                        UART_PRINT("Message number: %d\n\r", pubSuccess);
+#endif
+                        pubSuccess++;
+                    }
+                }
 #ifdef DEBUG_MODE
             UART_PRINT("Received message number: %d\n\r", recv_count);
 #endif
@@ -1156,14 +1161,9 @@ int16_t MQTT_subscribe()
  */
 int16_t MQTT_publish(char * pubTopic, char * pubData)
 {
-    //publish topic is either PUBLISH_TOPIC0 or PUBLISH_TOPIC1
-    //*publish_topic
-    //*publish_data
 
-    //int16_t MQTTClient_publish(MQTTClient_Handle handle, char *topic, uint16_t topicLen, char *msg, uint16_t msgLen, uint32_t flags);
-
-    int16_t lRetVal = MQTTClient_publish(gMqttClient, (char*) pubTopic, strlen((char*)pubTopic),
-                                      (char*)pubData, strlen((char*) pubData),
+    int16_t lRetVal = MQTTClient_publish(gMqttClient, pubTopic, strlen(pubTopic),
+                                      pubData, strlen( pubData),
                                       MQTT_QOS_2 |((RETAIN_ENABLE) ? MQTT_PUBLISH_RETAIN : 0));
     return lRetVal;
 }

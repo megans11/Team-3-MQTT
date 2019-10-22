@@ -14,7 +14,7 @@
 #include "my_queue_files/mqtt_queue.h"
 
 
-#define MOTOR_TIMER_PERIOD 100000 // .1s
+#define MOTOR_TIMER_PERIOD 80000 // .08s
 #define TIMER_FAILURE -1
 #define TIMER_SUCCESS 0
 

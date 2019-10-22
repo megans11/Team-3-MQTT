@@ -120,25 +120,32 @@ void MqttClientCallback(int32_t event,
             /* Error - Negative value                                 */
             if(0 == (MQTTClientCbs_ConnackRC(*ConnACK)))
             {
+#ifdef DEBUG_MODE
                 APP_PRINT("Connection Success\n\r");
+#endif
             }
             else
             {
+#ifdef DEBUG_MODE
                 APP_PRINT("Connection Error: %d\n\r", *ConnACK);
+#endif
             }
             break;
         }
 
         case MQTTCLIENT_OPERATION_EVT_PUBACK:
         {
+#ifdef DEBUG_MODE
             char *PubAck = (char *) data;
             APP_PRINT("PubAck:\n\r");
             APP_PRINT("%s\n\r", PubAck);
+#endif
             break;
         }
 
         case MQTTCLIENT_OPERATION_SUBACK:
         {
+#ifdef DEBUG_MODE
             APP_PRINT("Sub Ack:\n\r");
             APP_PRINT("Granted QoS Levels are:\n\r");
             for(i = 0; i < dataLen; i++)
@@ -146,15 +153,18 @@ void MqttClientCallback(int32_t event,
                 APP_PRINT("%s :QoS %d\n\r", topic[i],
                           ((unsigned char*) data)[i]);
             }
+#endif
             break;
         }
 
         case MQTTCLIENT_OPERATION_UNSUBACK:
         {
+#ifdef DEBUG_MODE
             char *UnSub = (char *) data;
             APP_PRINT("UnSub Ack \n\r");
             APP_PRINT("%s\n\r", UnSub);
             break;
+#endif
         }
 
         default:
@@ -231,14 +241,18 @@ void MqttClientCallback(int32_t event,
         /* signal to the main task                                        */
         if(receivedMsg_MqttQueue("type", "action") == QUEUE_FULL)
         {
+#ifdef DEBUG_MODE
             UART_PRINT("\n\n\rQueue is full\n\n\r");
+#endif
         }
         break;
     }
     case MQTTClient_DISCONNECT_CB_EVENT:
     {
         gResetApplication = true;
+#ifdef DEBUG_MODE
         APP_PRINT("BRIDGE DISCONNECTION\n\r");
+#endif
         break;
     }
     }
