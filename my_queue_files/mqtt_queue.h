@@ -45,6 +45,8 @@ typedef struct {
 #define CLIENT_DISCONNECTION      3
 #define RESET_PUSH_BUTTON_PRESSED 4
 #define THREAD_TERMINATE_REQUEST  5
+#define DEBUG                     6
+#define STATS                     7
 
 // Collection of all queue handles in project
 QueueHandle_t mqttQueue;

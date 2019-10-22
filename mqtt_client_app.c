@@ -218,8 +218,8 @@ unsigned char qos[SUBSCRIPTION_TOPIC_COUNT] =
 { MQTT_QOS_2, MQTT_QOS_2};
 
 /* Publishing topics and messages                                            */
-const char *publish_topic = { PUBLISH_TOPIC0, PUBLISH_TOPIC1};
-const char *publish_data = { PUBLISH_TOPIC0_DATA, PUBLISH_TOPIC1_DATA};
+const char *publish_topic [] = { PUBLISH_TOPIC0, PUBLISH_TOPIC1};
+const char *publish_data [] = { PUBLISH_TOPIC0_DATA, PUBLISH_TOPIC1_DATA};
 
 /* Message Queue                                                             */
 mqd_t g_PBQueue;
@@ -407,7 +407,27 @@ void * MqttClient(void *pvParameters)
             /*subscribed by local client)                                */
             case RECEIVED_MESSAGE:
                 // TODO: add our receive message logic (keep track of received messages)
-                break;
+
+
+
+                if(msg_buffer.topic == "Debug"){
+                    lRetVal =
+                            MQTTClient_publish(gMqttClient, (char*) publish_topic[0], strlen(
+                                      (char*)publish_topic[0]),
+                                      (char*)publish_data[0],
+                                       strlen((char*) publish_data[0]), MQTT_QOS_2 |
+                                       ((RETAIN_ENABLE) ? MQTT_PUBLISH_RETAIN : 0));
+                }
+                else if(msg_buffer.topic == "Stats"){
+                    lRetVal =
+                            MQTTClient_publish(gMqttClient, (char*) publish_topic[1], strlen(
+                                      (char*)publish_topic[1]),
+                                       (char*)publish_data[1],
+                                       strlen((char*) publish_data[1]), MQTT_QOS_2 |
+                                       ((RETAIN_ENABLE) ? MQTT_PUBLISH_RETAIN : 0));
+                }
+
+            break;
 
             /*On-board client disconnected from remote broker, only      */
             /*local MQTT network will work                               */
