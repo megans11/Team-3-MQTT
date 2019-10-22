@@ -399,10 +399,10 @@ void * MqttClient(void *pvParameters)
             pubAttempt++;
 
             /*send publish message                                       */
-            if(msg_buffer.topic == "Debug"){
+            if(msg_buffer.topic == "debug"){
                 lRetVal = MQTT_publish((char*) publish_topic[0], (char*)publish_data[0]);
             }
-            else if(msg_buffer.topic == "Stats"){
+            else if(msg_buffer.topic == "stats"){
                 lRetVal = MQTT_publish((char*) publish_topic[1], (char*)publish_data[1]);
             }
             
