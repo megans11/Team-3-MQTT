@@ -418,6 +418,9 @@ void * MqttClient(void *pvParameters)
             case RECEIVED_MESSAGE:
                 recv_count++;
                 // TODO: add our receive message logic (keep track of received messages)
+#ifdef DEBUG_MODE
+            UART_PRINT("Received message number: %d\n\r", recv_count);
+#endif
                 break;
 
             /*On-board client disconnected from remote broker, only      */
