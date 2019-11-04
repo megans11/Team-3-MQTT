@@ -43,14 +43,10 @@
 #include "pthread.h"
 #include "mqueue.h"
 
-/* Common interface includes                                                 */
-#include "uart_term.h"
-
 /* Application includes                                                      */
 #include "client_cbs.h"
 #include "my_queue_files/mqtt_queue.h"
-
-extern bool gResetApplication;
+#include "my_queue_files/uart_queue.h"
 
 //*****************************************************************************
 //                          LOCAL DEFINES
@@ -105,7 +101,6 @@ void MqttClientCallback(int32_t event,
                         void *data,
                         uint32_t dataLen)
 {
-
     memset(payload_buff, '\0', BUFF_SIZE);
 
     switch((MQTTClient_EventCB)event)
@@ -119,20 +114,20 @@ void MqttClientCallback(int32_t event,
             uint16_t *ConnACK = (uint16_t*) data;
 
 #ifdef UART_DEBUGGING
-            sendMsgToUart("CONNACK");
+            sendMsgToUart("CONNACK\r\n\0");
 #endif
             /* Check if Conn Ack return value is Success (0) or       */
             /* Error - Negative value                                 */
             if(0 == (MQTTClientCbs_ConnackRC(*ConnACK)))
             {
 #ifdef UART_DEBUGGING
-                sendMsgToUart("Connection Success");
+                sendMsgToUart("Connection Success\r\n\0");
 #endif
             }
             else
             {
 #ifdef UART_DEBUGGING
-                sendMsgToUart("Connection Error");
+                sendMsgToUart("Connection Error\r\n\0");
 #endif
             }
             break;
@@ -141,7 +136,7 @@ void MqttClientCallback(int32_t event,
         case MQTTCLIENT_OPERATION_EVT_PUBACK:
         {
 #ifdef UART_DEBUGGING
-            sendMsgToUart("PubAck");
+            sendMsgToUart("PubAck\r\n\0");
 #endif
             break;
         }
@@ -149,7 +144,7 @@ void MqttClientCallback(int32_t event,
         case MQTTCLIENT_OPERATION_SUBACK:
         {
 #ifdef UART_DEBUGGING
-            sendMsgToUart("SubAck");
+            sendMsgToUart("SubAck\r\n\0");
 #endif
             break;
         }
@@ -157,7 +152,7 @@ void MqttClientCallback(int32_t event,
         case MQTTCLIENT_OPERATION_UNSUBACK:
         {
 #ifdef UART_DEBUGGING
-            sendMsgToUart("UnsubAck");
+            sendMsgToUart("UnsubAck\r\n\0");
 #endif
             break;
         }
@@ -176,16 +171,15 @@ void MqttClientCallback(int32_t event,
         if(receivedMsg_MqttQueue(payload_buff) == QUEUE_FULL)
         {
 #ifdef UART_DEBUGGING
-            sendMsgToUart("Queue is full");
+            sendMsgToUart("Queue is full\r\n\0");
 #endif
         }
         break;
     }
     case MQTTClient_DISCONNECT_CB_EVENT:
     {
-        gResetApplication = true;
 #ifdef UART_DEBUGGING
-        sendMsgToUart("Bridge disconnect");
+        sendMsgToUart("Bridge disconnect\r\n\0");
 #endif
         break;
     }

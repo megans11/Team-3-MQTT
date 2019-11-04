@@ -21,12 +21,13 @@ static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
 
 
 
-int parseAction(char* JSON_STRING, char* myType, char* myAction)
+int parseAction(char* JSON_STRING, char* myType, char* myAction, char* myBoard, int* myCount)
 {
   int i;
   int r;
   jsmn_parser p;
   jsmntok_t t[128]; /* We expect no more than 128 tokens */
+  char count_buff[10];
   jsmn_init(&p);
   r = jsmn_parse(&p, JSON_STRING, strlen(JSON_STRING), t, sizeof(t) / sizeof(t[0]));
   if (r < 0) {
@@ -51,6 +52,19 @@ int parseAction(char* JSON_STRING, char* myType, char* myAction)
 		unsigned int length = key.end - key.start;
 		memcpy(myAction, &JSON_STRING[key.start], length);
 		memset(myAction+length, '\0', 1);
+      i++;
+    } else if (jsoneq(JSON_STRING, &t[i], "board") == 0) {
+        jsmntok_t key = t[i+1];
+        unsigned int length = key.end - key.start;
+        memcpy(myBoard, &JSON_STRING[key.start], length);
+        memset(myBoard+length, '\0', 1);
+      i++;
+    } else if (jsoneq(JSON_STRING, &t[i], "count") == 0) {
+        jsmntok_t key = t[i+1];
+        unsigned int length = key.end - key.start;
+        memcpy(count_buff, &JSON_STRING[key.start], length);
+        memset(count_buff+length, '\0', 1);
+        *myCount = atoi( count_buff );
       i++;
     } 
 

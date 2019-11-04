@@ -15,12 +15,12 @@
 UART_Handle UART0;
 UART_Params uartParams;
 
-//#define UART_DEBUGGING
+#define UART_DEBUGGING
 
 
 void dbgGPIOInit();
 void dbgUARTInit();
-void dbgUARTVal(unsigned char outVal);
+void dbgUARTVal(char* outVal);
 void dbgOutputLoc(unsigned int outLoc);
 void errorRoutine(unsigned int error_hex);
 

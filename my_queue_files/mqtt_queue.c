@@ -37,7 +37,7 @@ int sendMsg_MqttQueue(char* topic, int type, char* action){
     msg.type = type;
     msg.msg_type = PUBLISH_MESSAGE;
 
-    BaseType_t ret_val = xQueueSendFromISR(mqttQueue, (const void*) &msg, pdFALSE);
+    BaseType_t ret_val = xQueueSend(mqttQueue, (const void*) &msg, pdFALSE);
 
     // Debug after sending within ISR/callback
 

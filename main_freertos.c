@@ -47,8 +47,10 @@
 
 /* Example/Board Header files */
 #include "Board.h"
+#include "debug.h"
 
-extern void * mainThread(void *arg0);
+extern void *mainThread(void *arg0);
+extern void *uartThread(void *arg0);
 
 /* Stack size in bytes */
 #define THREADSTACKSIZE   4096
@@ -69,7 +71,7 @@ int main(void)
 
     /* Set priority and stack size attributes */
     pthread_attr_init(&pAttrs);
-    priParam.sched_priority = 1;
+    priParam.sched_priority = 2;
 
     detachState = PTHREAD_CREATE_DETACHED;
     retc = pthread_attr_setdetachstate(&pAttrs, detachState);
@@ -103,6 +105,50 @@ int main(void)
             ;
         }
     }
+
+#ifdef UART_DEBUGGING
+    pthread_t uthread;
+    pthread_attr_t uAttrs;
+    struct sched_param upriParam;
+
+    /* Set priority and stack size attributes */
+    pthread_attr_init(&uAttrs);
+    upriParam.sched_priority = 1;
+
+    detachState = PTHREAD_CREATE_DETACHED;
+    retc = pthread_attr_setdetachstate(&uAttrs, detachState);
+    if(retc != 0)
+    {
+        /* pthread_attr_setdetachstate() failed */
+        while(1)
+        {
+            ;
+        }
+    }
+
+    pthread_attr_setschedparam(&uAttrs, &upriParam);
+
+    retc |= pthread_attr_setstacksize(&uAttrs, THREADSTACKSIZE);
+    if(retc != 0)
+    {
+        /* pthread_attr_setstacksize() failed */
+        while(1)
+        {
+            ;
+        }
+    }
+
+    retc = pthread_create(&uthread, &uAttrs, uartThread, NULL);
+    if(retc != 0)
+    {
+        /* pthread_create() failed */
+        while(1)
+        {
+            ;
+        }
+    }
+
+#endif
 
     /* Start the FreeRTOS scheduler */
     vTaskStartScheduler();

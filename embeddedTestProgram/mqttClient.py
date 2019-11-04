@@ -23,7 +23,7 @@ client.connect("192.168.1.14", 1883, 60)
 i = 0
 while (1):
 	i += 1
-	client.publish("distance",'{"type" : "sensor", "action": "155"}') 
+	client.publish("distance",'{{"type" : "distance", "action": "155", "count": {}, "board": "sensor"}}'.format(i)) 
 
 	sleep(.2)
 	print("Pub {}".format(i))

@@ -49,10 +49,10 @@ void dbgGPIOInit(){
     You'll need to select an appropriate header pin for the UART
     and configure it via sysconfig.
 **/
-void dbgUARTVal(unsigned char outVal)
+void dbgUARTVal(char* outVal)
 {
     /* Write to UART0 */
-    UART_write(UART0, (void *) &outVal, sizeof(outVal));
+    UART_write(UART0, (void *) outVal, strlen(outVal));
 }
 
 /**

@@ -71,13 +71,13 @@
 
 /* Common interface includes                                                 */
 #include "network_if.h"
-#include "uart_term.h"
 
 /* Application includes                                                      */
 #include "Board.h"
 #include "client_cbs.h"
 #include "debug.h"
 #include "my_queue_files/mqtt_queue.h"
+#include "my_queue_files/uart_queue.h"
 #include "jsonParse.h"
 
 //*****************************************************************************
@@ -165,7 +165,6 @@
 //*****************************************************************************
 //                      LOCAL FUNCTION PROTOTYPES
 //*****************************************************************************
-static void DisplayBanner(char * AppName);
 void * MqttClient(void *pvParameters);
 void Mqtt_ClientStop(uint8_t disconnect);
 void Mqtt_ServerStop();
@@ -188,14 +187,12 @@ int16_t MQTT_publish(char * pubTopic, char * pubData);
 int32_t gApConnectionState = -1;
 uint32_t gInitState = 0;
 uint32_t memPtrCounterfree = 0;
-bool gResetApplication = false;
 static MQTTClient_Handle gMqttClient;
 MQTTClient_Params MqttClientExmple_params;
 unsigned short g_usTimerInts;
 
 /* Receive task handle                                                       */
 pthread_t g_rx_task_hndl = (pthread_t) NULL;
-uint32_t gUiConnFlag = 0;
 
 /* AP Security Parameters                                                    */
 SlWlanSecParams_t SecurityParams = { 0 };
@@ -205,9 +202,6 @@ SlWlanSecParams_t SecurityParams = { 0 };
 /* the ClientID parameter.                                                   */
 char ClientId[13] = {'\0'};
 
-/* Client User Name and Password                                             */
-const char *ClientUsername = "username1";
-const char *ClientPassword = "pwd1";
 
 /* Subscription topics and qos values                                        */
 char *topic[SUBSCRIPTION_TOPIC_COUNT] =
@@ -216,15 +210,11 @@ char *topic[SUBSCRIPTION_TOPIC_COUNT] =
 unsigned char qos[SUBSCRIPTION_TOPIC_COUNT] =
 { MQTT_QOS_2, MQTT_QOS_2};
 
-/* Publishing topics and messages                                            */
-const char *publish_topic [] = { PUBLISH_TOPIC0, PUBLISH_TOPIC1};
-const char *publish_data [] = { PUBLISH_TOPIC0_DATA, PUBLISH_TOPIC1_DATA};
 
 /* Message Queue                                                             */
-mqd_t g_PBQueue;
 pthread_t mqttThread = (pthread_t) NULL;
-pthread_t appThread = (pthread_t) NULL;
-timer_t g_timer;
+
+
 
 /* Printing new line                                                         */
 char lineBreak[] = "\n\r";
@@ -299,24 +289,6 @@ MQTTClient_Will will_param =
     WILL_RETAIN
 };
 
-//*****************************************************************************
-//
-//! Application startup display on UART
-//!
-//! \param  none
-//!
-//! \return none
-//!
-//*****************************************************************************
-static void DisplayBanner(char * AppName)
-{
-    UART_PRINT("\n\n\n\r");
-    UART_PRINT("\t\t *************************************************\n\r");
-    UART_PRINT("\t\t    CC32xx %s Application       \n\r", AppName);
-    UART_PRINT("\t\t *************************************************\n\r");
-    UART_PRINT("\n\n\n\r");
-}
-
 void * MqttClientThread(void * pvParameters)
 {
     mqtt_msg_struct queueElemRecv;
@@ -362,7 +334,9 @@ void * MqttClient(void *pvParameters)
         lRetVal = MqttClient_start();
         if(lRetVal == -1)
         {
-            UART_PRINT("MQTT Client lib initialization failed\n\r");
+#ifdef UART_DEBUGGING
+        sendMsgToUart("MQTT lib init fail\r\n\0");
+#endif
             pthread_exit(0);
             return(NULL);
         }
@@ -379,6 +353,9 @@ void * MqttClient(void *pvParameters)
      */
     char myType[12];
     char myAction[12];
+    char myBoard[12];
+    int myCount;
+    char msg[64];
 
     for(;;)
     {
@@ -396,8 +373,11 @@ void * MqttClient(void *pvParameters)
                 /*msg received by client from remote broker (on a topic      */
                 /*subscribed by local client)                                */
                 case RECEIVED_MESSAGE:
-                    parseAction(msg_buffer.payload, myType, myAction);
-                    UART_PRINT("%s: %s\n\r", myType, myAction);
+                    parseAction(msg_buffer.payload, myType, myAction, myBoard, &myCount);
+#ifdef UART_DEBUGGING
+                    sprintf(msg, "Type: %s, Action: %s, Board: %s, count: %d\r\n\0",myType,myAction, myBoard, myCount);
+                    sendMsgToUart(msg);
+#endif
 
                     break;
 
@@ -405,17 +385,12 @@ void * MqttClient(void *pvParameters)
                 /*On-board client disconnected from remote broker, only      */
                 /*local MQTT network will work                               */
                 case CLIENT_DISCONNECTION:
-                    UART_PRINT("\n\rOn-board Client Disconnected\n\r\r\n");
-                    gUiConnFlag = 0;
-                    break;
-
-                /*Push button for full restart check                         */
-                case RESET_PUSH_BUTTON_PRESSED:
-                    gResetApplication = true;
+#ifdef UART_DEBUGGING
+                    sendMsgToUart("CLIENT DISCONNECT\r\n\0");
+#endif
                     break;
 
                 case THREAD_TERMINATE_REQUEST:
-                    gUiConnFlag = 0;
                     pthread_exit(0);
                     return(NULL);
 
@@ -453,9 +428,6 @@ int32_t Mqtt_IF_Connect()
         strncpy(SSID_Remote_Name, SSID_NAME, Str_Length);
     }
 
-    /*Display Application Banner                                             */
-    DisplayBanner(APPLICATION_NAME);
-
 
     /*Reset The state of the machine                                         */
     Network_IF_ResetMCUStateMachine();
@@ -464,7 +436,6 @@ int32_t Mqtt_IF_Connect()
     lRetVal = Network_IF_InitDriver(ROLE_STA);
     if(lRetVal < 0)
     {
-        UART_PRINT("Failed to start SimpleLink Device\n\r", lRetVal);
         return(-1);
     }
 
@@ -477,7 +448,6 @@ int32_t Mqtt_IF_Connect()
     lRetVal = Network_IF_ConnectAP(SSID_Remote_Name, SecurityParams);
     if(lRetVal < 0)
     {
-        UART_PRINT("Connection to an AP failed\n\r");
         return(-1);
     }
 
@@ -505,7 +475,9 @@ void Mqtt_start()
 
     if (create_MqttQueue() == CREATE_QUEUE_FAILURE) {
         gInitState &= ~MQTT_INIT_STATE;
-        UART_PRINT("MQTT queue create fail\n\r");
+#ifdef UART_DEBUGGING
+        sendMsgToUart("queue create fail\r\n\0");
+#endif
         return;
     }
 
@@ -519,7 +491,9 @@ void Mqtt_start()
     if(retc != 0)
     {
         gInitState &= ~MQTT_INIT_STATE;
-        UART_PRINT("MQTT thread create fail\n\r");
+#ifdef UART_DEBUGGING
+        sendMsgToUart("mqtt thread create failed\r\n\0");
+#endif
         return;
     }
 
@@ -527,7 +501,9 @@ void Mqtt_start()
     if(retc != 0)
     {
         gInitState &= ~MQTT_INIT_STATE;
-        UART_PRINT("MQTT thread create fail\n\r");
+#ifdef UART_DEBUGGING
+        sendMsgToUart("mqtt thread create failed\r\n\0");
+#endif
         return;
     }
 
@@ -558,20 +534,16 @@ void Mqtt_Stop()
     /*write message indicating publish message                               */
     if(sendCmdMsg_MqttQueue(THREAD_TERMINATE_REQUEST))
     {
-        UART_PRINT(
-            "\n\n\rQueue is full, throw first msg and send the new one\n\n\r");
         readMsg_MqttQueue(&queueElemRecv);
-
         sendCmdMsg_MqttQueue(THREAD_TERMINATE_REQUEST);
     }
 
     sleep(2);
 
-    mq_close(g_PBQueue);
-    g_PBQueue = NULL;
-
     sl_Stop(SL_STOP_TIMEOUT);
-    UART_PRINT("\n\r Client Stop completed\r\n");
+#ifdef UART_DEBUGGING
+        sendMsgToUart("Client stop complete\r\n\0");
+#endif
 
 }
 
@@ -613,7 +585,9 @@ int32_t MqttClient_start()
                        (void *) &threadArg);
     if(lRetVal != 0)
     {
-        UART_PRINT("Client Thread Create Failed failed\n\r");
+#ifdef UART_DEBUGGING
+        sendMsgToUart("Client thr fail\r\n\0");
+#endif
         gInitState &= ~CLIENT_INIT_STATE;
         return(-1);
     }
@@ -655,17 +629,12 @@ int32_t MqttClient_start()
         if(0 > lRetVal)
         {
             /*lib initialization failed                                      */
-            UART_PRINT("Connection to broker failed, Error code: %d\n\r",
-                       lRetVal);
-
-            gUiConnFlag = 0;
-        }
-        else
-        {
-            gUiConnFlag = 1;
+#ifdef UART_DEBUGGING
+            sendMsgToUart("Broker conn fail\r\n\0");
+#endif
         }
         /*Subscribe to topics when session is not stored by the server       */
-        if((gUiConnFlag == 1) && (0 == lRetVal))
+        if((0 <= lRetVal) && (0 == lRetVal))
         {
             uint8_t subIndex;
             MQTTClient_SubscribeParams subscriptionInfo[
@@ -680,15 +649,18 @@ int32_t MqttClient_start()
             if(MQTTClient_subscribe(gMqttClient, subscriptionInfo,
                                     SUBSCRIPTION_TOPIC_COUNT) < 0)
             {
-                UART_PRINT("\n\r Subscription Error \n\r");
+#ifdef UART_DEBUGGING
+                sendMsgToUart("sub fail\r\n\0");
+#endif
                 MQTTClient_disconnect(gMqttClient);
-                gUiConnFlag = 0;
             }
             else
             {
                 for(iCount = 0; iCount < SUBSCRIPTION_TOPIC_COUNT; iCount++)
                 {
-                    UART_PRINT("Client subscribed on %s\n\r,", topic[iCount]);
+#ifdef UART_DEBUGGING
+                    sendMsgToUart("sub success\r\n\0");
+#endif
                 }
             }
         }
@@ -725,35 +697,15 @@ void Mqtt_ClientStop(uint8_t disconnect)
                            SUBSCRIPTION_TOPIC_COUNT);
     for(iCount = 0; iCount < SUBSCRIPTION_TOPIC_COUNT; iCount++)
     {
-        UART_PRINT("Unsubscribed from the topic %s\r\n", topic[iCount]);
+#ifdef UART_DEBUGGING
+        sendMsgToUart("unsub\r\n\0");
+#endif
     }
-    gUiConnFlag = 0;
 
     /*exiting the Client library                                             */
     MQTTClient_delete(gMqttClient);
 }
 
-//*****************************************************************************
-//!
-//! Utility function which prints the borders
-//!
-//! \param[in] ch  -  hold the charater for the border.
-//! \param[in] n   -  hold the size of the border.
-//!
-//! \return none.
-//!
-//*****************************************************************************
-
-void printBorder(char ch,
-                 int n)
-{
-    int i = 0;
-
-    for(i = 0; i < n; i++)
-    {
-        putch(ch);
-    }
-}
 
 //*****************************************************************************
 //!
@@ -831,76 +783,14 @@ int32_t SetClientIdNamefromMacAddress()
 //!
 //*****************************************************************************
 
-int32_t DisplayAppBanner(char* appName,
-                         char* appVersion)
-{
-    int32_t ret = 0;
-    uint8_t macAddress[SL_MAC_ADDR_LEN];
-    uint16_t macAddressLen = SL_MAC_ADDR_LEN;
-    uint16_t ConfigSize = 0;
-    uint8_t ConfigOpt = SL_DEVICE_GENERAL_VERSION;
-    SlDeviceVersion_t ver = {0};
 
-    ConfigSize = sizeof(SlDeviceVersion_t);
-
-    /*Print device version info. */
-    ret =
-        sl_DeviceGet(SL_DEVICE_GENERAL, &ConfigOpt, &ConfigSize,
-                     (uint8_t*)(&ver));
-
-    /*Print device Mac address */
-    ret |= (int32_t)sl_NetCfgGet(SL_NETCFG_MAC_ADDRESS_GET, 0, &macAddressLen,
-                       &macAddress[0]);
-
-    UART_PRINT(lineBreak);
-    UART_PRINT("\t");
-    printBorder('=', 44);
-    UART_PRINT(lineBreak);
-    UART_PRINT("\t   %s Example Ver: %s",appName, appVersion);
-    UART_PRINT(lineBreak);
-    UART_PRINT("\t");
-    printBorder('=', 44);
-    UART_PRINT(lineBreak);
-    UART_PRINT(lineBreak);
-    UART_PRINT("\t CHIP: 0x%x",ver.ChipId);
-    UART_PRINT(lineBreak);
-    UART_PRINT("\t MAC:  %d.%d.%d.%d",ver.FwVersion[0],ver.FwVersion[1],
-               ver.FwVersion[2],
-               ver.FwVersion[3]);
-    UART_PRINT(lineBreak);
-    UART_PRINT("\t PHY:  %d.%d.%d.%d",ver.PhyVersion[0],ver.PhyVersion[1],
-               ver.PhyVersion[2],
-               ver.PhyVersion[3]);
-    UART_PRINT(lineBreak);
-    UART_PRINT("\t NWP:  %d.%d.%d.%d",ver.NwpVersion[0],ver.NwpVersion[1],
-               ver.NwpVersion[2],
-               ver.NwpVersion[3]);
-    UART_PRINT(lineBreak);
-    UART_PRINT("\t ROM:  %d",ver.RomVersion);
-    UART_PRINT(lineBreak);
-    UART_PRINT("\t HOST: %s", SL_DRIVER_VERSION);
-    UART_PRINT(lineBreak);
-    UART_PRINT("\t MAC address: %02x:%02x:%02x:%02x:%02x:%02x", macAddress[0],
-               macAddress[1], macAddress[2], macAddress[3], macAddress[4],
-               macAddress[5]);
-    UART_PRINT(lineBreak);
-    UART_PRINT(lineBreak);
-    UART_PRINT("\t");
-    printBorder('=', 44);
-    UART_PRINT(lineBreak);
-    UART_PRINT(lineBreak);
-
-    return(ret);
-}
 
 void mainThread(void * args)
 {
-    uint32_t count = 0;
     pthread_t spawn_thread = (pthread_t) NULL;
     pthread_attr_t pAttrs_spawn;
     struct sched_param priParam;
     int32_t retc = 0;
-    UART_Handle tUartHndl;
 
     /*Initialize SlNetSock layer with CC31xx/CC32xx interface */
     SlNetIf_init(0);
@@ -914,10 +804,6 @@ void mainThread(void * args)
     SPI_init();
     GPIO_init();
 
-    /*Configure the UART                                                     */
-    tUartHndl = InitTerm();
-    /*remove uart receive from LPDS dependency                               */
-    UART_control(tUartHndl, UART_CMD_RXDISABLE, NULL);
 
     /*Create the sl_Task                                                     */
     pthread_attr_init(&pAttrs_spawn);
@@ -930,26 +816,22 @@ void mainThread(void * args)
 
     if(retc != 0)
     {
-        UART_PRINT("could not create simplelink task\n\r");
-        while(1)
-        {
-            ;
-        }
+#ifdef UART_DEBUGGING
+        sendMsgToUart("simplelink failed\r\n\0");
+#endif
+        return;
     }
 
     retc = sl_Start(0, 0, 0);
     if(retc < 0)
     {
         /*Handle Error */
-        UART_PRINT("\n sl_Start failed\n");
-        while(1)
-        {
-            ;
-        }
+#ifdef UART_DEBUGGING
+        sendMsgToUart("sl Start failed\r\n\0");
+#endif
+        return;
     }
 
-    /*Output device information to the UART terminal */
-    retc = DisplayAppBanner(APPLICATION_NAME, APPLICATION_VERSION);
     /*Set the ClientId with its own mac address */
     retc |= SetClientIdNamefromMacAddress();
 
@@ -958,59 +840,56 @@ void mainThread(void * args)
     if(retc < 0)
     {
         /*Handle Error */
-        UART_PRINT("\n sl_Stop failed\n");
-        while(1)
-        {
-            ;
-        }
+#ifdef UART_DEBUGGING
+        sendMsgToUart("\n sl_Stop failed\r\n\0");
+#endif
+        return;
     }
 
     if(retc < 0)
     {
         /*Handle Error */
-        UART_PRINT("mqtt_client - Unable to retrieve device information \n");
-        while(1)
-        {
-            ;
-        }
+#ifdef UART_DEBUGGING
+        sendMsgToUart("cant retrieve dev info\r\n\0");
+#endif
+        return;
     }
 
-    while(1)
+    topic[0] = SUBSCRIPTION_TOPIC0;
+    topic[1] = SUBSCRIPTION_TOPIC1;
+    gInitState = 0;
+
+    /*Connect to AP                                                      */
+    gApConnectionState = Mqtt_IF_Connect();
+
+    gInitState |= MQTT_INIT_STATE;
+    /*Run MQTT Main Thread (it will open the Client and Server)          */
+    Mqtt_start();
+
+    /*Wait for init to be completed!!!                                   */
+    while(gInitState != 0)
     {
-        gResetApplication = false;
-        topic[0] = SUBSCRIPTION_TOPIC0;
-        topic[1] = SUBSCRIPTION_TOPIC1;
-//        topic[2] = SUBSCRIPTION_TOPIC2;
-//        topic[3] = SUBSCRIPTION_TOPIC3;
-        gInitState = 0;
-
-        /*Connect to AP                                                      */
-        gApConnectionState = Mqtt_IF_Connect();
-
-        gInitState |= MQTT_INIT_STATE;
-        /*Run MQTT Main Thread (it will open the Client and Server)          */
-        Mqtt_start();
-
-        /*Wait for init to be completed!!!                                   */
-        while(gInitState != 0)
-        {
-            UART_PRINT(".");
-            sleep(1);
-        }
-        UART_PRINT(".\r\n");
-
-        while(gResetApplication == false)
-        {
-            ;
-        }
-
-        UART_PRINT("TO Complete - Closing all threads and resources\r\n");
-
-        /*Stop the MQTT Process                                              */
-        Mqtt_Stop();
-
-        UART_PRINT("reopen MQTT # %d  \r\n", ++count);
+        sleep(1);
     }
+
+    /* start motor thread
+
+#ifdef UART_DEBUGGING
+    sendMsgToUart("Motor thread started"\r\n\0");
+#endif
+*/
+
+    /* Start navigation thread
+#ifdef UART_DEBUGGING
+    sendMsgToUart("Navigation thread started"\r\n\0");
+#endif
+*/
+
+#ifdef UART_DEBUGGING
+    sendMsgToUart("mainThread finished\r\n\0");
+#endif
+
+    return;
 }
 
 /**
@@ -1038,7 +917,9 @@ int32_t MQTT_connect()
     lRetVal = Network_IF_InitDriver(ROLE_STA);
     if(lRetVal < 0)
     {
-//        UART_PRINT("Failed to start SimpleLink Device\n\r", lRetVal);
+#ifdef UART_DEBUGGING
+        sendMsgToUart("SimpleLink Failed\r\n\0");
+#endif
         return(-1);
     }
 
@@ -1051,11 +932,13 @@ int32_t MQTT_connect()
     lRetVal = Network_IF_ConnectAP(SSID_Remote_Name, SecurityParams);
     if(lRetVal < 0)
     {
-//        UART_PRINT("Connection to an AP failed\n\r");
+#ifdef UART_DEBUGGING
+        sendMsgToUart("Connection AP failed\r\n\0");
+#endif
         return(-1);
     }
 
-//        sleep(1);
+        sleep(1);
 
     return(0);
 }
@@ -1080,17 +963,20 @@ int16_t MQTT_subscribe()
     if(MQTTClient_subscribe(gMqttClient, subscriptionInfo,
                             SUBSCRIPTION_TOPIC_COUNT) < 0)
     {
-//        UART_PRINT("\n\r Subscription Error \n\r");
+#ifdef UART_DEBUGGING
+        sendMsgToUart("Subscribed failed\r\n\0");
+#endif
         MQTTClient_disconnect(gMqttClient);
-        gUiConnFlag = 0;
         return 0;
     }
     else
     {
         for(iCount = 0; iCount < SUBSCRIPTION_TOPIC_COUNT; iCount++)
         {
-//            UART_PRINT("Client subscribed on %s\n\r,", topic[iCount]);
-            //print to console
+#ifdef UART_DEBUGGING
+        sendMsgToUart("Subscribed\r\n\0");
+#endif
+
         }
         return -1;
     }
