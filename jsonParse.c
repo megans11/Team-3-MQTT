@@ -30,41 +30,30 @@ int parseAction(char* JSON_STRING, char* myType, char* myAction)
   jsmn_init(&p);
   r = jsmn_parse(&p, JSON_STRING, strlen(JSON_STRING), t, sizeof(t) / sizeof(t[0]));
   if (r < 0) {
-    printf("Failed to parse JSON: %d\n", r);
     return -1;
   }
 
   /* Assume the top-level element is an object */
   if (r < 1 || t[0].type != JSMN_OBJECT) {
-    printf("Object expected\n");
     return -1;
   }
 
   /* Loop over all keys of the root object */
   for (i = 1; i < r; i++) {
     if (jsoneq(JSON_STRING, &t[i], "type") == 0) {
-      /* We may use strndup() to fetch string value */
-		//printf(JSON_STRING + i);
-		//printf("- type: %.*s\n", t[i + 1].end - t[i + 1].start, JSON_STRING + t[i + 1].start);
-
 		jsmntok_t key = t[i+1];
 		unsigned int length = key.end - key.start;
 		memcpy(myType, &JSON_STRING[key.start], length);
+		memset(myType+length, '\0', 1);
       i++;
     } else if (jsoneq(JSON_STRING, &t[i], "action") == 0) {
-      /* We may additionally check if the value is either "true" or "false" */
-      //printf(JSON_STRING)
-	  printf("- action: %.*s\n", t[i + 1].end - t[i + 1].start, JSON_STRING + t[i + 1].start);
 		jsmntok_t key = t[i+1];
 		unsigned int length = key.end - key.start;
 		memcpy(myAction, &JSON_STRING[key.start], length);
-		
+		memset(myAction+length, '\0', 1);
       i++;
     } 
-	else {
-      printf("Unexpected key: %.*s\n", t[i].end - t[i].start,
-             JSON_STRING + t[i].start);
-    }
+
   }
   return EXIT_SUCCESS;
 }

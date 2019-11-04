@@ -18,18 +18,16 @@
 // message format
 typedef struct {
    int  msg_type;
-   char topic[16];
-   char type[16];
-   char action[64];
+   int type;
+   char topic[32];
+   char payload[128];
 } mqtt_msg_struct;
 
-#define DEBUG_MODE
-#define BOARD_NAME "sensor"
-
+//#define DEBUG_MODE
 
 // queue parameters
-#define UART_QUEUE_LENGTH 32
-#define UART_QUEUE_WIDTH sizeof(mqtt_msg_struct) // number of characters allowed
+#define MQTT_QUEUE_LENGTH 16
+#define MQTT_QUEUE_WIDTH sizeof(mqtt_msg_struct) // number of characters allowed
 
 // Return value definitions
 #define CREATE_QUEUE_FAILURE -1
@@ -47,16 +45,14 @@ typedef struct {
 #define CLIENT_DISCONNECTION      3
 #define RESET_PUSH_BUTTON_PRESSED 4
 #define THREAD_TERMINATE_REQUEST  5
-#define DEBUG                     6
-#define STATS                     7
 
 // Collection of all queue handles in project
 QueueHandle_t mqttQueue;
 
 // Public queue functions
 int create_MqttQueue();
-int sendMsg_MqttQueue(char* topic, char* type, char* action);
-int receivedMsg_MqttQueue(char* type, char* action);
+int sendMsg_MqttQueue(char* topic, int type, char* action);
+int receivedMsg_MqttQueue(char* payload);
 int sendCmdMsg_MqttQueue(int type);
 int readMsg_MqttQueue(mqtt_msg_struct *msg_buffer);
 

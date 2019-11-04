@@ -78,7 +78,7 @@
 #include "client_cbs.h"
 #include "debug.h"
 #include "my_queue_files/mqtt_queue.h"
-#include "test_timer.h"
+#include "jsonParse.h"
 
 //*****************************************************************************
 //                          LOCAL DEFINES
@@ -109,7 +109,7 @@
 /* Defining Broker IP address and port Number                                */
 //#define SERVER_ADDRESS           "messagesight.demos.ibm.com"
 //#define SERVER_ADDRESS           "m2m.eclipse.org"
-#define SERVER_IP_ADDRESS        "192.168.2.3"
+#define SERVER_IP_ADDRESS        "192.168.1.14"
 #define PORT_NUMBER              1883
 #define SECURED_PORT_NUMBER      8883
 #define LOOPBACK_PORT            1882
@@ -124,15 +124,15 @@
 #define SUBSCRIPTION_TOPIC_COUNT 2
 
 /* Defining Subscription Topic Values                                        */
-#define SUBSCRIPTION_TOPIC0      "debug"
-#define SUBSCRIPTION_TOPIC1      "statistics"
+#define SUBSCRIPTION_TOPIC0      "distance"
+#define SUBSCRIPTION_TOPIC1      "debug"
 
 
 /* Defining Publish Topic Values                                             */
-#define PUBLISH_TOPIC0           "debug"
-#define PUBLISH_TOPIC0_DATA      "debug data"
-#define PUBLISH_TOPIC1           "statistics"
-#define PUBLISH_TOPIC1_DATA      "statistics data"
+#define PUBLISH_TOPIC0           "distance"
+#define PUBLISH_TOPIC0_DATA      "distance data"
+#define PUBLISH_TOPIC1           "debug"
+#define PUBLISH_TOPIC1_DATA      "debug data"
 
 /* Spawn task priority and Task and Thread Stack Size                        */
 #define TASKSTACKSIZE            2048
@@ -369,9 +369,6 @@ void * MqttClient(void *pvParameters)
     }
     
     //Counters for publish and receive
-    static int pubAttempt = 0;
-    static int pubSuccess = 0;
-
     /*handling the signals from various callbacks including the push button  */
     /*prompting the client to publish a msg on PUB_TOPIC OR msg received by  */
     /*the server on enrolled topic(for which the on-board client ha enrolled)*/
@@ -380,100 +377,50 @@ void * MqttClient(void *pvParameters)
     /*be sent to the server to see if any local client has subscribed on the */
     /*same topic).
      */
-    int recv_count = 0;
-    char msg[64];
-    for(;; )
+    char myType[12];
+    char myAction[12];
+
+    for(;;)
     {
         /*waiting for signals                                                */
         lRetVal = readMsg_MqttQueue(&msg_buffer);
 
         if (lRetVal == READ_SUCCESS) {
-
-
-        switch(msg_buffer.msg_type)
-        {
-        case PUBLISH_MESSAGE:
-        
-            //attempt to publish count increase
-            pubAttempt++;
-
-
-
-            sprintf(msg, "{\"board\" : \"%s\", \"count\": \"%d\", \"msg\": \"test\"}\0", BOARD_NAME,  pubAttempt);
-
-
-/*
-            if(msg_buffer.topic == "debug"){
-                lRetVal = MQTT_publish(publish_topic[0], msg);
-            }
-            else if(msg_buffer.topic == "stats"){
-                lRetVal = MQTT_publish(publish_topic[1], msg);
-            }
-*/
-
-            /*send publish message                                       */
-            lRetVal = MQTT_publish(msg_buffer.topic, msg);
-
-            //if returns success then add to successful publish
-            if(lRetVal >= 0){ //failure is a negative number
-#ifdef DEBUG_MODE
-                UART_PRINT("\n\r CC3200 Publishes the following message \n\r");
-                UART_PRINT("Topic: %s\n\r", msg_buffer.topic);
-                UART_PRINT("Data: %s\n\r", msg);
-                UART_PRINT("Message number: %d\n\r", pubSuccess);
-#endif
-                pubSuccess++;
-            }
-
-   break;
-
-            /*msg received by client from remote broker (on a topic      */
-            /*subscribed by local client)                                */
-            case RECEIVED_MESSAGE:
-                recv_count++;
-
-                if (recv_count % 10 == 0){
-                    sprintf(msg,"{\"board\" : \"%s\", \"received\": \"%d\"}\0", BOARD_NAME,  recv_count);
-                    lRetVal = MQTT_publish("stats", msg);
-                    pubAttempt;
-
-                    if(lRetVal >= 0){ //failure is a negative number
-#ifdef DEBUG_MODE
-                        UART_PRINT("\n\r CC3200 Publishes the following message \n\r");
-                        UART_PRINT("Topic: %s\n\r", "stats");
-                        UART_PRINT("Data: %s\n\r", msg);
-                        UART_PRINT("Message number: %d\n\r", pubSuccess);
-#endif
-                        pubSuccess++;
-                    }
-                }
-#ifdef DEBUG_MODE
-            UART_PRINT("Received message number: %d\n\r", recv_count);
-#endif
+            switch(msg_buffer.msg_type)
+            {
+            case PUBLISH_MESSAGE:
+                /*send publish message                                       */
+                lRetVal = MQTT_publish(msg_buffer.topic, msg_buffer.payload);
                 break;
 
+                /*msg received by client from remote broker (on a topic      */
+                /*subscribed by local client)                                */
+                case RECEIVED_MESSAGE:
+                    parseAction(msg_buffer.payload, myType, myAction);
+                    UART_PRINT("%s: %s\n\r", myType, myAction);
 
-            /*On-board client disconnected from remote broker, only      */
-            /*local MQTT network will work                               */
-            case CLIENT_DISCONNECTION:
-                UART_PRINT("\n\rOn-board Client Disconnected\n\r\r\n");
-                gUiConnFlag = 0;
-                break;
+                    break;
 
-            /*Push button for full restart check                         */
-            case RESET_PUSH_BUTTON_PRESSED:
-                gResetApplication = true;
-                break;
 
-            case THREAD_TERMINATE_REQUEST:
-                gUiConnFlag = 0;
-                pthread_exit(0);
-                return(NULL);
+                /*On-board client disconnected from remote broker, only      */
+                /*local MQTT network will work                               */
+                case CLIENT_DISCONNECTION:
+                    UART_PRINT("\n\rOn-board Client Disconnected\n\r\r\n");
+                    gUiConnFlag = 0;
+                    break;
 
-            default:
-                // TODO: Bad, errorRoutine call?
-//                sleep(1);
-                break;
+                /*Push button for full restart check                         */
+                case RESET_PUSH_BUTTON_PRESSED:
+                    gResetApplication = true;
+                    break;
+
+                case THREAD_TERMINATE_REQUEST:
+                    gUiConnFlag = 0;
+                    pthread_exit(0);
+                    return(NULL);
+
+                default:
+                    break;
             }
         }
     }
@@ -581,13 +528,6 @@ void Mqtt_start()
     {
         gInitState &= ~MQTT_INIT_STATE;
         UART_PRINT("MQTT thread create fail\n\r");
-        return;
-    }
-
-    // Initate the test timer
-    if (init_testTimer() == TIMER_FAILURE) {
-        gInitState &= ~MQTT_INIT_STATE;
-        UART_PRINT("Timer start fail\n\r");
         return;
     }
 

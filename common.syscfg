@@ -155,10 +155,10 @@ GPIO13.$name = "DEBUG_4";
 GPIO14.$name = "DEBUG_STATUS";
 // Name - The C/C++ identifier used in applications as the index parameter passed to Timer runtime APIs
 Timer4.$name = "TEST_TIMER";
+// Timer Type
+Timer4.timerType = "32 Bits";
 // Name
 Timer4.timer.$name = "MyTimer1";
-// Use Peripheral
-Timer4.timer.$assign = "Timer3";
 // Name - The C/C++ identifier used in applications as the index parameter passed to SPI runtime APIs
 SPI1.$name = "Board_SPI0";
 // Mode - In three pin mode the SS signal is not used.
@@ -183,6 +183,8 @@ GPIO12.gpioPin.$suggestSolution = "59";
 GPIO13.gpioPin.$suggestSolution = "60";
 // Suggest solution
 GPIO14.gpioPin.$suggestSolution = "63";
+// Suggest solution
+Timer4.timer.$suggestSolution = "Timer2";
 // Suggest solution
 SPI1.spi.$suggestSolution = "SPI0";
 // Suggest solution

@@ -11,7 +11,7 @@
  * Wrapper for createQueue to create predefined queue1
  */
 int create_MqttQueue(){
-    mqttQueue = xQueueCreate(UART_QUEUE_LENGTH, UART_QUEUE_WIDTH);
+    mqttQueue = xQueueCreate(MQTT_QUEUE_LENGTH, MQTT_QUEUE_WIDTH);
 
     if(mqttQueue != NULL)
         return CREATE_QUEUE_SUCCESS;
@@ -25,17 +25,16 @@ int create_MqttQueue(){
  * Sends signed value - use when called from ISR
  * Returns FreeRTOS return value
  */
-int sendMsg_MqttQueue(char* topic, char* type, char* action){
+int sendMsg_MqttQueue(char* topic, int type, char* action){
 
     // Debug before sending within ISR/callback
     mqtt_msg_struct msg;
     memset(msg.topic,'\0',sizeof(msg.topic));
-    memset(msg.type,'\0',sizeof(msg.type));
-    memset(msg.action,'\0',sizeof(msg.action));
+    memset(msg.payload,'\0',sizeof(msg.payload));
 
     strncpy(msg.topic, topic, strlen(topic));
-    strncpy(msg.type, type, strlen(type));
-    strncpy(msg.action, action, strlen(action));
+    strncpy(msg.payload, action, strlen(action));
+    msg.type = type;
     msg.msg_type = PUBLISH_MESSAGE;
 
     BaseType_t ret_val = xQueueSendFromISR(mqttQueue, (const void*) &msg, pdFALSE);
@@ -49,16 +48,12 @@ int sendMsg_MqttQueue(char* topic, char* type, char* action){
 
 }
 
-int receivedMsg_MqttQueue(char* type, char* action){
+int receivedMsg_MqttQueue(char* payload){
 
     // Debug before sending within ISR/callback
     mqtt_msg_struct msg;
-    memset(msg.topic,'\0',sizeof(msg.topic));
-    memset(msg.type,'\0',sizeof(msg.type));
-    memset(msg.action,'\0',sizeof(msg.action));
 
-    strncpy(msg.type, type, strlen(type));
-    strncpy(msg.action, action, strlen(action));
+    strncpy(msg.payload, payload, strlen(payload));
     msg.msg_type = RECEIVED_MESSAGE;
 
     BaseType_t ret_val = xQueueSendFromISR(mqttQueue, (const void*) &msg, pdFALSE);
@@ -95,28 +90,13 @@ int sendCmdMsg_MqttQueue(int type){
  */
 int readMsg_MqttQueue(mqtt_msg_struct *msg_buffer){
     // Debug before receiving from queue in ISR
-//    dbgOutputLoc(0);
+
     int read_status = xQueueReceive(mqttQueue, (void*) msg_buffer, portMAX_DELAY);
-//    dbgOutputLoc(0);
 
     // Block until message, check if valid
     if (read_status == pdTRUE) {
-        // For now:
-//        strncpy(topic, msg_buffer.topic, strlen(msg_buffer.topic));
-//        strncpy(type, msg_buffer.type, strlen(msg_buffer.type));
-//        strncpy(action, msg_buffer.action, strlen(msg_buffer.action));
-
-        // Fill correct buffer
-//        switch (msg_buffer[0]){
-//            case MSG_TYPE_DEBUG:
-//                msg_ptr = &msg_buffer[1];
-//                memcpy(debug_buffer, msg_ptr, strlen(msg_ptr));
-//                debug_buffer[strlen(msg_ptr)] = '\0';
-//                return MSG_TYPE_DEBUG;
-//
-//            default:
-//                errorRoutine(0);
-        return READ_SUCCESS;
+        //
+       return READ_SUCCESS;
 
     }
     return READ_FAILURE;

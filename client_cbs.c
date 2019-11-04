@@ -98,13 +98,15 @@ extern int32_t MQTT_SendMsgToQueue(struct msgQueue *queueElement);
 //! return none
 //
 //*****************************************************************************
+
 void MqttClientCallback(int32_t event,
                         void * metaData,
                         uint32_t metaDateLen,
                         void *data,
                         uint32_t dataLen)
 {
-    int32_t i = 0;
+
+    memset(payload_buff, '\0', BUFF_SIZE);
 
     switch((MQTTClient_EventCB)event)
     {
@@ -115,19 +117,22 @@ void MqttClientCallback(int32_t event,
         case MQTTCLIENT_OPERATION_CONNACK:
         {
             uint16_t *ConnACK = (uint16_t*) data;
-            APP_PRINT("CONNACK:\n\r");
+
+#ifdef UART_DEBUGGING
+            sendMsgToUart("CONNACK");
+#endif
             /* Check if Conn Ack return value is Success (0) or       */
             /* Error - Negative value                                 */
             if(0 == (MQTTClientCbs_ConnackRC(*ConnACK)))
             {
-#ifdef DEBUG_MODE
-                APP_PRINT("Connection Success\n\r");
+#ifdef UART_DEBUGGING
+                sendMsgToUart("Connection Success");
 #endif
             }
             else
             {
-#ifdef DEBUG_MODE
-                APP_PRINT("Connection Error: %d\n\r", *ConnACK);
+#ifdef UART_DEBUGGING
+                sendMsgToUart("Connection Error");
 #endif
             }
             break;
@@ -135,36 +140,26 @@ void MqttClientCallback(int32_t event,
 
         case MQTTCLIENT_OPERATION_EVT_PUBACK:
         {
-#ifdef DEBUG_MODE
-            char *PubAck = (char *) data;
-            APP_PRINT("PubAck:\n\r");
-            APP_PRINT("%s\n\r", PubAck);
+#ifdef UART_DEBUGGING
+            sendMsgToUart("PubAck");
 #endif
             break;
         }
 
         case MQTTCLIENT_OPERATION_SUBACK:
         {
-#ifdef DEBUG_MODE
-            APP_PRINT("Sub Ack:\n\r");
-            APP_PRINT("Granted QoS Levels are:\n\r");
-            for(i = 0; i < dataLen; i++)
-            {
-                APP_PRINT("%s :QoS %d\n\r", topic[i],
-                          ((unsigned char*) data)[i]);
-            }
+#ifdef UART_DEBUGGING
+            sendMsgToUart("SubAck");
 #endif
             break;
         }
 
         case MQTTCLIENT_OPERATION_UNSUBACK:
         {
-#ifdef DEBUG_MODE
-            char *UnSub = (char *) data;
-            APP_PRINT("UnSub Ack \n\r");
-            APP_PRINT("%s\n\r", UnSub);
-            break;
+#ifdef UART_DEBUGGING
+            sendMsgToUart("UnsubAck");
 #endif
+            break;
         }
 
         default:
@@ -174,75 +169,14 @@ void MqttClientCallback(int32_t event,
     }
     case MQTTClient_RECV_CB_EVENT:
     {
-        MQTTClient_RecvMetaDataCB *recvMetaData =
-            (MQTTClient_RecvMetaDataCB *)metaData;
-        uint32_t bufSizeReqd = 0;
-        uint32_t topicOffset;
-        uint32_t payloadOffset;
+        // get payload
+        memcpy((void*) payload_buff, (const void*) data, dataLen);
 
-        struct publishMsgHeader msgHead;
-
-        char *pubBuff = NULL;
-        struct msgQueue queueElem;
-
-        topicOffset = sizeof(struct publishMsgHeader);
-        payloadOffset = sizeof(struct publishMsgHeader) +
-                        recvMetaData->topLen + 1;
-
-        bufSizeReqd += sizeof(struct publishMsgHeader);
-        bufSizeReqd += recvMetaData->topLen + 1;
-        bufSizeReqd += dataLen + 1;
-//        pubBuff = (char *) malloc(bufSizeReqd);
-//
-//        if(pubBuff == NULL)
-//        {
-//            APP_PRINT("malloc failed: recv_cb\n\r");
-//            return;
-//        }
-
-//        msgHead.topicLen = recvMetaData->topLen;
-//        msgHead.payLen = dataLen;
-//        msgHead.retain = recvMetaData->retain;
-//        msgHead.dup = recvMetaData->dup;
-//        msgHead.qos = recvMetaData->qos;
-//
-//        memcpy((void*) pubBuff, &msgHead, sizeof(struct publishMsgHeader));
-//
-//        /* copying the topic name into the buffer                        */
-//        memcpy((void*) (pubBuff + topicOffset),
-//               (const void*)recvMetaData->topic,
-//               recvMetaData->topLen);
-//        memset((void*) (pubBuff + topicOffset + recvMetaData->topLen),'\0',1);
-//
-//        /* copying the payload into the buffer                           */
-//        memcpy((void*) (pubBuff + payloadOffset), (const void*) data, dataLen);
-//        memset((void*) (pubBuff + payloadOffset + dataLen), '\0', 1);
-//
-//        APP_PRINT("\n\rMsg Recvd. by client\n\r");
-//        APP_PRINT("TOPIC: %s\n\r", pubBuff + topicOffset);
-//        APP_PRINT("PAYLOAD: %s\n\r", pubBuff + payloadOffset);
-//        APP_PRINT("QOS: %d\n\r", recvMetaData->qos);
-
-//        if(recvMetaData->retain)
-//        {
-//            APP_PRINT("Retained\n\r");
-//        }
-//
-//        if(recvMetaData->dup)
-//        {
-//            APP_PRINT("Duplicate\n\r");
-//        }
-
-        /* filling the queue element details                              */
-//        queueElem.event = MSG_RECV_BY_CLIENT;
-//        queueElem.msgPtr = pubBuff;
-//        queueElem.topLen = recvMetaData->topLen;
-
-        /* signal to the main task                                        */
-        if(receivedMsg_MqttQueue("type", "action") == QUEUE_FULL)
+        // Send payload to main task
+        if(receivedMsg_MqttQueue(payload_buff) == QUEUE_FULL)
         {
-#ifdef DEBUG_MODE
-            UART_PRINT("\n\n\rQueue is full\n\n\r");
+#ifdef UART_DEBUGGING
+            sendMsgToUart("Queue is full");
 #endif
         }
         break;
@@ -250,8 +184,8 @@ void MqttClientCallback(int32_t event,
     case MQTTClient_DISCONNECT_CB_EVENT:
     {
         gResetApplication = true;
-#ifdef DEBUG_MODE
-        APP_PRINT("BRIDGE DISCONNECTION\n\r");
+#ifdef UART_DEBUGGING
+        sendMsgToUart("Bridge disconnect");
 #endif
         break;
     }
